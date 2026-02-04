@@ -1,0 +1,244 @@
+/* =========================
+   GLOBAL RESET
+========================= */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f4f6f8;
+  color: #222;
+}
+
+/* =========================
+   MAIN CONTAINER
+========================= */
+.container {
+  max-width: 900px;
+  margin: auto;
+  padding: 16px;
+}
+
+/* =========================
+   HEADINGS
+========================= */
+h2 {
+  text-align: center;
+  margin-bottom: 16px;
+  color: #1e88e5;
+}
+
+/* =========================
+   INPUT AREA
+========================= */
+textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 15px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  resize: vertical;
+  margin-bottom: 12px;
+}
+
+/* =========================
+   SELECT + BUTTONS
+========================= */
+select,
+button {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+}
+
+select {
+  background: #fff;
+}
+
+button {
+  background: #1e88e5;
+  color: #fff;
+  cursor: pointer;
+  border: none;
+  font-weight: bold;
+}
+
+button:hover {
+  background: #1565c0;
+}
+
+/* =========================
+   OUTPUT AREA
+========================= */
+pre {
+  white-space: pre-wrap;
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 16px;
+  font-family: monospace;
+  font-size: 15px;
+}
+
+/* =========================
+   PIANO CHORDS CONTAINER
+========================= */
+#pianoChords {
+  margin-top: 24px;
+}
+
+/* =========================
+   MOBILE-FIRST → DESKTOP
+========================= */
+@media (min-width: 768px) {
+  .container {
+    padding: 24px;
+  }
+
+  select,
+  button {
+    width: auto;
+    min-width: 180px;
+  }
+
+  select {
+    margin-right: 8px;
+  }
+}
+/* =========================
+   PIANO KEYBOARD
+========================= */
+.piano {
+  position: relative;
+  display: flex;
+  height: 80px;
+  margin-top: 6px;
+}
+
+.key {
+  position: relative;
+  border: 1px solid #333;
+}
+
+.white {
+  width: 32px;
+  height: 80px;
+  background: #fff;
+  z-index: 1;
+}
+
+.black {
+  width: 20px;
+  height: 50px;
+  background: #000;
+  position: absolute;
+  top: 0;
+  z-index: 2;
+  margin-left: -10px;
+}
+
+/* Highlighted notes */
+.white.active {
+  background: #90caf9;
+}
+
+.black.active {
+  background: #1e88e5;
+}
+
+/* =========================
+   CHORD REFERENCE SECTION
+========================= */
+.chord-ref-title {
+  margin-top: 32px;
+  margin-bottom: 12px;
+  color: #333;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 6px;
+}
+
+#pianoChords {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* Desktop / tablet grid */
+@media (min-width: 768px) {
+  #pianoChords {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media print {
+  textarea,
+  select,
+  button {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+  }
+
+  .container {
+    max-width: 100%;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  pre {
+    white-space: pre-wrap;
+    font-size: 14px;
+  }
+
+  #pianoChords {
+    page-break-before: always;
+  }
+}
+.piano {
+  position: relative;
+  display: flex;
+  height: 160px;
+  margin-top: 10px;
+}
+
+.white-key {
+  width: 60px;
+  height: 160px;
+  border: 1px solid #333;
+  background: white;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.white-key.active {
+  background: #9fd0ff;
+}
+
+.black-key {
+  position: absolute;
+  width: 40px;
+  height: 100px;
+  background: black;
+  top: 0;
+  z-index: 2;
+  border-radius: 0 0 4px 4px;
+}
+
+.black-key.active {
+  background: #3b82f6;
+}
+
+
+
+
