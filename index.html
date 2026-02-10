@@ -1,62 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Chord Transposer</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <title>LWP Transposer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1e88e5">
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#CFA43A" />
 </head>
 <body>
 
-  <div class="container">
-    <h2>🎹 Chord Transposer</h2>
+<!-- ================= HOME SCREEN ================= -->
+<div id="homeScreen" class="screen active">
+  <div class="home-container">
+    <img src="icons/icon-512.png" class="app-logo" alt="LWP logo" />
 
-    <textarea id="inputText" placeholder="Paste song here..."></textarea>
-
-    <select id="toKey">
-  <optgroup label="Major Keys">
-    <option value="C">C</option>
-    <option value="C#">C#</option>
-    <option value="D">D</option>
-    <option value="D#">D#</option>
-    <option value="E">E</option>
-    <option value="F">F</option>
-    <option value="F#">F#</option>
-    <option value="G">G</option>
-    <option value="G#">G#</option>
-    <option value="A">A</option>
-    <option value="A#">A#</option>
-    <option value="B">B</option>
-  </optgroup>
-
-  <optgroup label="Minor Keys">
-    <option value="Cm">C minor</option>
-    <option value="C#m">C# minor</option>
-    <option value="Dm">D minor</option>
-    <option value="D#m">D# minor</option>
-    <option value="Em">E minor</option>
-    <option value="Fm">F minor</option>
-    <option value="F#m">F# minor</option>
-    <option value="Gm">G minor</option>
-    <option value="G#m">G# minor</option>
-    <option value="Am">A minor</option>
-    <option value="A#m">A# minor</option>
-    <option value="Bm">B minor</option>
-  </optgroup>
-</select>
-
-    <button onclick="transpose()">Transpose</button>
-    <button onclick="exportPDF()">Export as PDF</button>
-
-    <pre id="outputText"></pre>
-    <h3 class="chord-ref-title">Chord Reference</h3>
-    <div id="pianoChords"></div>
+    <button class="primary-btn" onclick="openTranspose()">
+      🎹 Transpose
+    </button>
   </div>
+</div>
 
-  <script src="app.js"></script>
+
+<!-- ================= TRANSPOSE SCREEN ================= -->
+<div id="transposeScreen" class="screen">
+
+  <!-- Top Bar -->
+  <header class="topbar">
+    <button class="back-btn" onclick="goHome()">← Back</button>
+    <h2>🎹 Chord Transposer</h2>
+    <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+  </header>
+
+  <div class="container">
+
+    <!-- ===== PDF Upload ===== -->
+    <input type="file" id="pdfInput" accept="application/pdf" hidden />
+    <button onclick="document.getElementById('pdfInput').click()">
+      Upload PDF
+    </button>
+
+    <!-- ===== Smart PDF Preview Area ===== -->
+    <div id="pdfViewer"></div>
+
+    <!-- ===== Manual Song Input ===== -->
+    <textarea
+      id="inputText"
+      placeholder="Paste song here..."
+    ></textarea>
+
+    <!-- ===== Key Selector ===== -->
+    <select id="toKey">
+      <optgroup label="Major">
+        <option>C</option><option>C#</option><option>D</option><option>D#</option>
+        <option>E</option><option>F</option><option>F#</option>
+        <option>G</option><option>G#</option><option>A</option><option>A#</option><option>B</option>
+      </optgroup>
+
+      <optgroup label="Minor">
+        <option>Cm</option><option>C#m</option><option>Dm</option><option>D#m</option>
+        <option>Em</option><option>Fm</option><option>F#m</option>
+        <option>Gm</option><option>G#m</option><option>Am</option><option>A#m</option><option>Bm</option>
+      </optgroup>
+    </select>
+
+    <!-- ===== Actions ===== -->
+    <div class="actions">
+      <button onclick="transpose()">Transpose</button>
+      <button onclick="exportPDF()">Export as PDF</button>
+    </div>
+
+    <!-- ===== Text Output (for plain-text mode) ===== -->
+    <pre id="outputText"></pre>
+
+    <!-- ===== Chord Notes Toggle ===== -->
+    <label class="chord-toggle">
+      <input type="checkbox" id="toggleChords" onchange="toggleChordView()" />
+      Show chord notes
+    </label>
+
+    <div id="chordSection" style="display:none;">
+      <h3 class="chord-ref-title">Chord Reference</h3>
+      <div id="pianoChords"></div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ================= LIBRARIES ================= -->
+
+<!-- PDF.js (for reading original PDF text + layout) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<!-- PDF-Lib (for generating downloadable transposed PDF) -->
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
+
+
+<!-- ================= MAIN APP SCRIPT ================= -->
+<script src="app.js"></script>
+
+
+<!-- ================= SERVICE WORKER ================= -->
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>
 
 </body>
 </html>

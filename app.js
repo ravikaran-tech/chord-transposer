@@ -1,226 +1,337 @@
-console.log('app.js loaded');
+/* =========================================================
+   WAIT FOR DOM (CRITICAL FIX FOR PDF UPLOAD)
+========================================================= */
+document.addEventListener("DOMContentLoaded", () => {
 
-/* ======================
-   BASIC NOTE UTILITIES
-====================== */
+/* =========================================================
+   DOM REFERENCES
+========================================================= */
+const homeScreen = document.getElementById("homeScreen");
+const transposeScreen = document.getElementById("transposeScreen");
 
-const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const inputText = document.getElementById("inputText");
+const outputText = document.getElementById("outputText");
+const toKeySelect = document.getElementById("toKey");
 
-const FLAT_TO_SHARP = {
-  Db: 'C#',
-  Eb: 'D#',
-  Gb: 'F#',
-  Ab: 'G#',
-  Bb: 'A#'
+const pdfInput = document.getElementById("pdfInput");
+const pdfViewer = document.getElementById("pdfViewer");
+
+const pianoChords = document.getElementById("pianoChords");
+const toggleChords = document.getElementById("toggleChords");
+const chordSection = document.getElementById("chordSection");
+
+
+/* =========================================================
+   UI MODE SWITCH
+========================================================= */
+function toggleInputMode(isPDF) {
+  inputText.style.display = isPDF ? "none" : "block";
+}
+
+
+/* =========================================================
+   SESSION RESET
+========================================================= */
+function resetSession() {
+  inputText.value = "";
+  outputText.textContent = "";
+  pdfViewer.innerHTML = "";
+  pianoChords.innerHTML = "";
+  importedPDF = null;
+
+  toggleInputMode(false);
+
+  if (toggleChords) toggleChords.checked = false;
+  if (chordSection) chordSection.style.display = "none";
+}
+
+
+/* =========================================================
+   THEME SYSTEM
+========================================================= */
+(function () {
+  const root = document.documentElement;
+  const saved = localStorage.getItem("theme");
+
+  const theme = saved
+    ? saved
+    : window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+
+  root.setAttribute("data-theme", theme);
+  updateThemeIcon(theme);
+})();
+
+window.toggleTheme = function () {
+  const root = document.documentElement;
+  const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+
+  root.setAttribute("data-theme", next);
+  localStorage.setItem("theme", next);
+  updateThemeIcon(next);
 };
 
-function normalizeNote(note) {
-  return FLAT_TO_SHARP[note] || note;
+function updateThemeIcon(theme) {
+  const btn = document.querySelector(".theme-toggle");
+  if (btn) btn.textContent = theme === "dark" ? "☀️" : "🌙";
 }
 
-function noteIndex(note) {
-  return NOTES.indexOf(normalizeNote(note));
-}
 
-/* ======================
-   TRANSPOSITION
-====================== */
+/* =========================================================
+   NAVIGATION
+========================================================= */
+window.openTranspose = function () {
+  homeScreen.classList.remove("active");
+  transposeScreen.classList.add("active");
+};
 
+window.goHome = function () {
+  transposeScreen.classList.remove("active");
+  homeScreen.classList.add("active");
+  resetSession();
+};
+
+
+/* =========================================================
+   MUSIC THEORY
+========================================================= */
+const NOTES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+
+const ENHARMONIC = { Db:"C#", Eb:"D#", Gb:"F#", Ab:"G#", Bb:"A#" };
+
+const CHORD_REGEX =
+/\b([A-G](?:#|b)?)(maj7|m7|m|sus4|sus2|dim|aug|add9|7)?\b/g;
+
+function normalize(note) { return ENHARMONIC[note] || note; }
+function noteIndex(note) { return NOTES.indexOf(normalize(note)); }
+
+
+/* =========================================================
+   KEY DETECTION
+========================================================= */
 function detectKey(text) {
-  const m = text.match(/\b[A-G](?:#|b)?m?\b/);
-  return m ? normalizeNote(m[0].replace('m','')) : 'C';
+  const matches = text.match(CHORD_REGEX);
+  if (!matches) return "C";
+
+  const count = {};
+  matches.forEach(c => {
+    const root = normalize(c.replace(/[^A-G#b]/g,""));
+    count[root] = (count[root] || 0) + 1;
+  });
+
+  return Object.keys(count).sort((a,b)=>count[b]-count[a])[0] || "C";
 }
 
+
+/* =========================================================
+   CHORD TRANSPOSE
+========================================================= */
 function transposeChord(chord, shift) {
   const m = chord.match(/^([A-G](?:#|b)?)(.*)$/);
   if (!m) return chord;
 
-  const root = normalizeNote(m[1]);
-  const suffix = m[2] || '';
-  const idx = noteIndex(root);
-
+  const idx = noteIndex(normalize(m[1]));
   if (idx === -1) return chord;
 
-  return NOTES[(idx + shift + 12) % 12] + suffix;
+  return NOTES[(idx + shift + 12) % 12] + m[2];
 }
 
-function transpose() {
-  console.log('Transpose clicked');
 
-  const inputEl = document.getElementById('inputText');
-  const outputEl = document.getElementById('outputText');
-  const toKeyValue = document.getElementById('toKey').value;
+/* =========================================================
+   CHORD DISPLAY
+========================================================= */
+function extractChords(text) {
+  const matches = text.match(CHORD_REGEX);
+  return matches ? [...new Set(matches)] : [];
+}
 
-  const input = inputEl.value;
-  if (!input.trim()) {
-    alert('Paste a song first');
-    return;
-  }
+function buildTriad(chord) {
+  const m = chord.match(/^([A-G](?:#|b)?)(m?)/);
+  if (!m) return null;
 
-  const toKey = toKeyValue.replace('m','');
+  const i = noteIndex(normalize(m[1]));
+  const minor = m[2] === "m";
+
+  return [
+    NOTES[i],
+    NOTES[(i + (minor ? 3 : 4)) % 12],
+    NOTES[(i + 7) % 12]
+  ];
+}
+
+function renderChordNotes(chords) {
+  pianoChords.innerHTML = "";
+  chords.forEach(ch => {
+    const triad = buildTriad(ch);
+    if (!triad) return;
+
+    const div = document.createElement("div");
+    div.textContent = `${ch} → ${triad.join(", ")}`;
+    pianoChords.appendChild(div);
+  });
+}
+
+window.toggleChordView = function () {
+  chordSection.style.display = toggleChords.checked ? "block" : "none";
+};
+
+
+/* =========================================================
+   TEXT TRANSPOSE
+========================================================= */
+function transposeText() {
+  const input = inputText.value.trim();
+  if (!input) return alert("Paste a song first");
+
+  const toKey = normalize(toKeySelect.value.replace("m",""));
   const fromKey = detectKey(input);
   const shift = (noteIndex(toKey) - noteIndex(fromKey) + 12) % 12;
 
-  const chordRegex =
-    /\b[A-G](?:#|b)?(?:m|maj|min|dim|aug|sus|add)?\d*(?:\/[A-G](?:#|b)?)?\b/g;
+  const result = input.replace(CHORD_REGEX, c => transposeChord(c, shift));
 
-  const result = input.replace(chordRegex, c =>
-    transposeChord(c, shift)
-  );
-
-  outputEl.textContent = result;
-
-  const chords = extractChords(result);
-  renderChordNotes(chords);
-}
-
-/* ======================
-   CHORD EXTRACTION
-   (CHORD LINES ONLY)
-====================== */
-
-function extractChords(text) {
-  const lines = text.split('\n');
-  const chords = new Set();
-
-  lines.forEach(line => {
-    const trimmed = line.trim();
-
-    // Ignore empty lines and section headers
-    if (!trimmed || trimmed.startsWith('[')) return;
-
-    // Split by whitespace
-    const tokens = trimmed.split(/\s+/);
-
-    // Every token must be a valid chord
-    const allChords = tokens.every(tok =>
-      /^[A-G](?:#|b)?m?$/.test(tok)
-    );
-
-    if (!allChords) return;
-
-    tokens.forEach(tok => chords.add(tok));
-  });
-
-  return [...chords];
+  outputText.textContent = result;
+  renderChordNotes(extractChords(result));
 }
 
 
+/* =========================================================
+   PDF STATE
+========================================================= */
+let importedPDF = null;
 
-/* ======================
-   TRIAD BUILDER
-====================== */
 
-function buildTriad(chord) {
-  const match = chord.match(/^([A-G](?:#|b)?)(m?)/);
-  if (!match) return null;
+/* =========================================================
+   PDF UPLOAD (NOW WORKS)
+========================================================= */
+pdfInput.addEventListener("change", async (e) => {
 
-  const root = normalizeNote(match[1]);
-  const isMinor = match[2] === 'm';
+  resetSession();
 
-  const rootIndex = noteIndex(root);
-  if (rootIndex === -1) return null;
+  const file = e.target.files[0];
+  if (!file) return;
 
-  const thirdInterval = isMinor ? 3 : 4;
-  const fifthInterval = 7;
+  toggleInputMode(true);
 
-  const third = NOTES[(rootIndex + thirdInterval) % 12];
-  const fifth = NOTES[(rootIndex + fifthInterval) % 12];
+  const buffer = await file.arrayBuffer();
+  importedPDF = await pdfjsLib.getDocument({ data: buffer }).promise;
 
-  return [root, third, fifth];
+  await renderPDFPreview();
+});
+
+
+/* =========================================================
+   RENDER PDF
+========================================================= */
+async function renderPDFPreview() {
+  pdfViewer.innerHTML = "";
+
+  for (let p = 1; p <= importedPDF.numPages; p++) {
+    const page = await importedPDF.getPage(p);
+    const viewport = page.getViewport({ scale: 1.5 });
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    await page.render({ canvasContext: ctx, viewport }).promise;
+
+    pdfViewer.appendChild(canvas);
+  }
 }
 
-/* ======================
-   PIANO RENDERING
-====================== */
 
-const PIANO_LAYOUT = [
-  { note: 'C',  type: 'white' },
-  { note: 'C#', type: 'black' },
-  { note: 'D',  type: 'white' },
-  { note: 'D#', type: 'black' },
-  { note: 'E',  type: 'white' },
-  { note: 'F',  type: 'white' },
-  { note: 'F#', type: 'black' },
-  { note: 'G',  type: 'white' },
-  { note: 'G#', type: 'black' },
-  { note: 'A',  type: 'white' },
-  { note: 'A#', type: 'black' },
-  { note: 'B',  type: 'white' }
-];
+/* =========================================================
+   PDF TRANSPOSE
+========================================================= */
+async function transposePDF() {
 
-function renderPiano(activeNotes) {
-  const piano = document.createElement('div');
-  piano.className = 'piano';
+  const toKey = normalize(toKeySelect.value.replace("m",""));
 
-  // Create white keys first
-  PIANO_LAYOUT.forEach(key => {
-    if (key.type !== 'white') return;
+  let fullText = "";
+  for (let p = 1; p <= importedPDF.numPages; p++) {
+    const page = await importedPDF.getPage(p);
+    const content = await page.getTextContent();
+    fullText += content.items.map(i => i.str).join(" ");
+  }
 
-    const el = document.createElement('div');
-    el.className = 'white-key';
+  const fromKey = detectKey(fullText);
+  const shift = (noteIndex(toKey) - noteIndex(fromKey) + 12) % 12;
 
-    if (activeNotes.includes(key.note)) {
-      el.classList.add('active');
+  renderChordNotes(extractChords(fullText.replace(CHORD_REGEX, c => transposeChord(c, shift))));
+
+  const canvases = pdfViewer.querySelectorAll("canvas");
+
+  for (let i = 0; i < canvases.length; i++) {
+    const page = await importedPDF.getPage(i + 1);
+    const content = await page.getTextContent();
+    const viewport = page.getViewport({ scale: 1.5 });
+    const ctx = canvases[i].getContext("2d");
+
+    content.items.forEach(item => {
+      if (CHORD_REGEX.test(item.str)) {
+        const x = item.transform[4] * viewport.scale;
+        const y = canvases[i].height - item.transform[5] * viewport.scale;
+
+        ctx.fillStyle = "white";
+        ctx.fillRect(x - 2, y - 12, 50, 14);
+
+        ctx.fillStyle = "black";
+        ctx.font = "12px Helvetica";
+        ctx.fillText(transposeChord(item.str, shift), x, y);
+      }
+    });
+  }
+}
+
+
+/* =========================================================
+   MAIN TRANSPOSE
+========================================================= */
+window.transpose = function () {
+  if (importedPDF) transposePDF();
+  else transposeText();
+};
+
+
+/* =========================================================
+   EXPORT PDF
+========================================================= */
+window.exportPDF = async function () {
+
+  if (!importedPDF && !outputText.textContent.trim())
+    return alert("Nothing to export.");
+
+  const { PDFDocument } = PDFLib;
+  const pdfDoc = await PDFDocument.create();
+
+  if (importedPDF) {
+    const canvases = pdfViewer.querySelectorAll("canvas");
+
+    for (const canvas of canvases) {
+      const imgBytes = await fetch(canvas.toDataURL("image/png")).then(r => r.arrayBuffer());
+      const img = await pdfDoc.embedPng(imgBytes);
+
+      const page = pdfDoc.addPage([img.width, img.height]);
+      page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
     }
+  } else {
+    const page = pdfDoc.addPage([595, 842]);
+    page.drawText(outputText.textContent, { x: 50, y: 800, size: 12 });
+  }
 
-    el.dataset.note = key.note;
-    piano.appendChild(el);
-  });
+  const bytes = await pdfDoc.save();
+  const blob = new Blob([bytes], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
 
-  // Overlay black keys
-  PIANO_LAYOUT.forEach((key, i) => {
-    if (key.type !== 'black') return;
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "transposed-song.pdf";
+  a.click();
 
-    const el = document.createElement('div');
-    el.className = 'black-key';
+  URL.revokeObjectURL(url);
+};
 
-    if (activeNotes.includes(key.note)) {
-      el.classList.add('active');
-    }
-
-    // Position black keys correctly
-    const positionMap = {
-      'C#': 0.7,
-      'D#': 1.7,
-      'F#': 3.7,
-      'G#': 4.7,
-      'A#': 5.7
-    };
-
-    el.style.left = `${positionMap[key.note] * 60}px`;
-    piano.appendChild(el);
-  });
-
-  return piano;
-}
-
-
-/* ======================
-   CHORD REFERENCE UI
-====================== */
-
-function renderChordNotes(chords) {
-  const container = document.getElementById('pianoChords');
-  container.innerHTML = '';
-
-  chords.forEach(chord => {
-    const notes = buildTriad(chord);
-    if (!notes) return;
-
-    const block = document.createElement('div');
-    block.style.marginBottom = '16px';
-
-    const title = document.createElement('strong');
-    title.textContent = `${chord} → ${notes.join(', ')}`;
-    block.appendChild(title);
-
-    block.appendChild(renderPiano(notes));
-    container.appendChild(block);
-  });
-}
-
-function exportPDF() {
-  window.print();
-}
-
+}); // END DOMContentLoaded
