@@ -1,62 +1,37 @@
-/* =========================================================
-   LWP CHORD TRANSPOSER — PRODUCTION OFFLINE SERVICE WORKER
-   Safe for Netlify + Mobile Home-Screen PWA
-========================================================= */
+const CACHE_NAME = 'chord-transposer-runtime-v2';
 
-const CACHE_NAME = "lwp-transposer-v1";
-
-/* Core files required for full offline functionality */
 const STATIC_ASSETS = [
-  "/",                // root
-  "/index.html",
-  "/style.css",
-  "/app.js",
-  "/manifest.json",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png"
+  './app.js',
+  './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png'
 ];
 
-
-/* =========================================================
-   INSTALL — cache core assets
-========================================================= */
-self.addEventListener("install", event => {
+self.addEventListener('install', event => {
   self.skipWaiting();
-
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(STATIC_ASSETS);
-    })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
   );
 });
 
-
-/* =========================================================
-   ACTIVATE — remove old caches
-========================================================= */
-self.addEventListener("activate", event => {
+self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      )
+      Promise.all(keys.map(k => k !== CACHE_NAME && caches.delete(k)))
     )
   );
 });
 
+self.addEventListener('fetch', event => {
+  // DO NOT intercept HTML or CSS (this fixes raw HTML issue)
+  if (
+    event.request.destination === 'document' ||
+    event.request.destination === 'style'
+  ) {
+    return;
+  }
 
-/* =========================================================
-   FETCH — offline-first strategy
-========================================================= */
-self.addEventListener("fetch", event => {
   event.respondWith(
-    caches.match(event.request).then(cachedResponse => {
-      // Return cached file if available, otherwise fetch from network
-      return cachedResponse || fetch(event.request);
-    })
+    caches.match(event.request).then(res => res || fetch(event.request))
   );
 });

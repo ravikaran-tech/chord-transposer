@@ -1,288 +1,254 @@
-/* =========================================================
-   BASE RESET
-========================================================= */
+/* =========================
+   GLOBAL RESET
+========================= */
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 body {
-  background: #ffffff;
-  color: #111111;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f4f6f8;
+  color: #222;
 }
 
-
-/* =========================================================
-   SCREEN SYSTEM
-========================================================= */
-.screen {
-  display: none;
-}
-
-.screen.active {
-  display: block;
-}
-
-
-/* =========================================================
-   HOME SCREEN
-========================================================= */
-.home-container {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 22px;
-  text-align: center;
-  padding: 20px;
-}
-
-
-/* ---------- APP LOGO (RESTORED ORIGINAL SIZE) ---------- */
-.app-logo {
-  width: 38vw;          /* responsive width */
-  max-width: 180px;     /* prevents huge desktop logo */
-  min-width: 110px;     /* prevents tiny mobile logo */
-  height: auto;
-  border-radius: 22%;
-  object-fit: cover;
-}
-
-/* Tablet */
-@media (min-width: 600px) {
-  .app-logo {
-    max-width: 220px;
-  }
-}
-
-/* Large tablet */
-@media (min-width: 900px) {
-  .app-logo {
-    max-width: 260px;
-  }
-}
-
-/* Desktop */
-@media (min-width: 1200px) {
-  .app-logo {
-    max-width: 220px;
-  }
-}
-
-
-/* ---------- PRIMARY BUTTON ---------- */
-.primary-btn {
-  background: #CFA43A;
-  color: white;
-  border: none;
-  padding: 14px 32px;
-  font-size: 18px;
-  border-radius: 14px;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.primary-btn:hover {
-  background: #B8902E;
-  transform: translateY(-1px);
-}
-
-
-/* =========================================================
-   TRANSPOSE SCREEN
-========================================================= */
+/* =========================
+   MAIN CONTAINER
+========================= */
 .container {
-  max-width: 720px;
-  margin: 20px auto;
-  padding: 20px;
+  max-width: 900px;
+  margin: auto;
+  padding: 16px;
 }
 
+/* =========================
+   HEADINGS
+========================= */
+h2 {
+  text-align: center;
+  margin-bottom: 16px;
+  color: #1e88e5;
+}
 
-/* ---------- TEXT INPUT ---------- */
+/* =========================
+   INPUT AREA
+========================= */
 textarea {
   width: 100%;
-  min-height: 180px;
+  min-height: 200px;
   padding: 12px;
+  font-family: monospace;
   font-size: 15px;
-  margin-bottom: 12px;
-  border-radius: 10px;
+  border-radius: 6px;
   border: 1px solid #ccc;
   resize: vertical;
-}
-
-
-/* ---------- SELECT ---------- */
-select {
-  width: 100%;
-  padding: 10px;
   margin-bottom: 12px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  font-size: 15px;
 }
 
-
-/* ---------- BUTTONS ---------- */
+/* =========================
+   SELECT + BUTTONS
+========================= */
+select,
 button {
-  padding: 10px 16px;
-  margin-right: 8px;
-  margin-bottom: 8px;
-  border-radius: 10px;
-  border: none;
-  background: #CFA43A;
-  color: white;
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+}
+
+select {
+  background: #fff;
+}
+
+button {
+  background: #1e88e5;
+  color: #fff;
   cursor: pointer;
-  transition: 0.2s ease;
+  border: none;
+  font-weight: bold;
 }
 
 button:hover {
-  background: #B8902E;
+  background: #1565c0;
 }
 
+/* =========================
+   DETECTED KEY INFO
+========================= */
+.detected-key {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: #555;
+  font-style: italic;
+}
 
-/* ---------- OUTPUT TEXT ---------- */
+/* =========================
+   OUTPUT AREA
+========================= */
 pre {
-  margin-top: 16px;
   white-space: pre-wrap;
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 16px;
+  font-family: monospace;
   font-size: 15px;
 }
 
+/* =========================
+   PIANO CHORDS CONTAINER
+========================= */
+#pianoChords {
+  margin-top: 24px;
+}
 
-/* =========================================================
-   TOP BAR
-========================================================= */
-.topbar {
+/* =========================
+   MOBILE-FIRST → DESKTOP
+========================= */
+@media (min-width: 768px) {
+  .container {
+    padding: 24px;
+  }
+
+  select,
+  button {
+    width: auto;
+    min-width: 180px;
+  }
+
+  select {
+    margin-right: 8px;
+  }
+}
+/* =========================
+   PIANO KEYBOARD
+========================= */
+.piano {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid #eee;
+  height: 80px;
+  margin-top: 6px;
 }
 
-.back-btn {
-  background: #f3f3f3;
-  border: 1px solid #ddd;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-  color: #333;
-}
-
-.back-btn:hover {
-  background: #e6e6e6;
-}
-
-.theme-toggle {
-  margin-left: auto;
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-
-/* =========================================================
-   PDF VIEWER
-========================================================= */
-#pdfViewer {
-  margin-top: 16px;
-}
-
-.pdf-canvas {
-  width: 100%;
-  height: auto;
-  margin-bottom: 16px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-}
-
-
-/* =========================================================
-   CHORD REFERENCE
-========================================================= */
-.chord-toggle {
-  display: block;
-  margin-top: 16px;
-  font-size: 14px;
-}
-
-.chord-ref-title {
-  margin-top: 20px;
-  margin-bottom: 8px;
-  font-weight: 600;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 4px;
-}
-
-#pianoChords div {
-  margin-bottom: 6px;
-  font-size: 14px;
-}
-
-
-/* =========================================================
-   DARK MODE (SYSTEM + MANUAL)
-========================================================= */
-
-/* Auto dark if user hasn't chosen light */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) body {
-    background: #111;
-    color: #f2f2f2;
-  }
-
-  :root:not([data-theme="light"]) textarea,
-  :root:not([data-theme="light"]) select {
-    background: #222;
-    color: #f2f2f2;
-    border: 1px solid #333;
-  }
-
-  :root:not([data-theme="light"]) .topbar {
-    background: #111;
-    border-bottom: 1px solid #333;
-  }
-
-  :root:not([data-theme="light"]) .back-btn {
-    background: #222;
-    border: 1px solid #444;
-    color: #eee;
-  }
-
-  :root:not([data-theme="light"]) .pdf-canvas {
-    border-color: #333;
-  }
-}
-
-
-/* Manual dark override */
-:root[data-theme="dark"] body {
-  background: #111;
-  color: #f2f2f2;
-}
-
-:root[data-theme="dark"] textarea,
-:root[data-theme="dark"] select {
-  background: #222;
-  color: #f2f2f2;
+.key {
+  position: relative;
   border: 1px solid #333;
 }
 
-:root[data-theme="dark"] .topbar {
-  background: #111;
-  border-bottom: 1px solid #333;
+.white {
+  width: 32px;
+  height: 80px;
+  background: #fff;
+  z-index: 1;
 }
 
-:root[data-theme="dark"] .back-btn {
-  background: #222;
-  border: 1px solid #444;
-  color: #eee;
+.black {
+  width: 20px;
+  height: 50px;
+  background: #000;
+  position: absolute;
+  top: 0;
+  z-index: 2;
+  margin-left: -10px;
 }
 
-:root[data-theme="dark"] .pdf-canvas {
-  border-color: #333;
+/* Highlighted notes */
+.white.active {
+  background: #90caf9;
 }
+
+.black.active {
+  background: #1e88e5;
+}
+
+/* =========================
+   CHORD REFERENCE SECTION
+========================= */
+.chord-ref-title {
+  margin-top: 32px;
+  margin-bottom: 12px;
+  color: #333;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 6px;
+}
+
+#pianoChords {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* Desktop / tablet grid */
+@media (min-width: 768px) {
+  #pianoChords {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media print {
+  textarea,
+  select,
+  button {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+  }
+
+  .container {
+    max-width: 100%;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  pre {
+    white-space: pre-wrap;
+    font-size: 14px;
+  }
+
+  #pianoChords {
+    page-break-before: always;
+  }
+}
+.piano {
+  position: relative;
+  display: flex;
+  height: 160px;
+  margin-top: 10px;
+}
+
+.white-key {
+  width: 60px;
+  height: 160px;
+  border: 1px solid #333;
+  background: white;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.white-key.active {
+  background: #9fd0ff;
+}
+
+.black-key {
+  position: absolute;
+  width: 40px;
+  height: 100px;
+  background: black;
+  top: 0;
+  z-index: 2;
+  border-radius: 0 0 4px 4px;
+}
+
+.black-key.active {
+  background: #3b82f6;
+}
+
+
+
+
