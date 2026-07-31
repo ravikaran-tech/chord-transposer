@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <title>Chord Transposer</title>
@@ -7,19 +7,35 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#101216">
+  <meta name="theme-color" content="#171A21">
+
+  <script>
+    // Set theme before paint to avoid a flash of the wrong theme.
+    (function () {
+      var saved = null;
+      try { saved = localStorage.getItem('theme'); } catch (e) {}
+      var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
 </head>
 <body>
 
   <div class="stage">
 
     <header class="topbar">
-      <span class="wordmark">CHORD&nbsp;TRANSPOSER</span>
-      <span class="wordmark-sub">stage tool</span>
+      <div>
+        <span class="wordmark">Chord Transposer</span>
+        <span class="wordmark-sub">for piano &amp; guitar</span>
+      </div>
+      <div class="theme-switch" id="themeSwitch">
+        <button type="button" data-theme-choice="light">Light</button>
+        <button type="button" data-theme-choice="dark">Dark</button>
+      </div>
     </header>
 
     <nav class="tabs" role="tablist">
@@ -33,13 +49,20 @@
     <div id="tab-piano" class="tab-panel active">
 
       <section class="hero">
-        <p class="hero-lead">You play in one key. The band moved to another. Pick both — the readout gives you the transpose amount.</p>
+        <p class="hero-lead">You play in one key. The band moved to another. Pick both — this gives you the transpose amount.</p>
 
-        <div class="led-window">
-          <span class="led-label">TRANSPOSE</span>
-          <span id="ledValue" class="led-value">0</span>
+        <div class="dial-frame">
+          <div id="pianoDialBadge" class="dial-badge">
+            <span class="dial-label">Transpose</span>
+            <span id="ledValue" class="dial-value">0</span>
+          </div>
+          <p id="quickResultAlt" class="alt-line"></p>
+
+          <div class="scale-track">
+            <div class="scale-bar"><span id="pianoScaleDot" class="scale-dot"></span></div>
+            <div class="scale-ticks"><span>&minus;5</span><span>0</span><span>+6</span></div>
+          </div>
         </div>
-        <p id="quickResultAlt" class="alt-line"></p>
 
         <div class="knob-row">
           <label class="knob">
@@ -52,11 +75,12 @@
             <select id="quickToKey" data-keys="major-minor"></select>
           </label>
         </div>
-        <button id="quickTransposeBtn" class="btn btn-ghost">Update readout</button>
+        <button id="quickTransposeBtn" class="btn btn-ghost">Update</button>
       </section>
 
       <section class="panel">
-        <h2 class="panel-title">Song &amp; chord transposer</h2>
+        <p class="kicker">Song &amp; chord transposer</p>
+        <h2 class="panel-title">Transpose a song</h2>
         <p class="panel-note">Paste a whole song with lyrics, or just a chord list like <code>C, F, G</code>.</p>
 
         <textarea id="inputText" spellcheck="false" placeholder="C  F  G  Am
@@ -90,6 +114,7 @@ Paste your song or chord list here..."></textarea>
       </section>
 
       <section class="panel">
+        <p class="kicker">Chord reference</p>
         <h2 class="panel-title">On the keyboard</h2>
         <p class="panel-note">Every chord in the result. Tap one to enlarge and hear it.</p>
         <div id="pianoChords" class="chord-grid">
@@ -105,16 +130,23 @@ Paste your song or chord list here..."></textarea>
     <div id="tab-guitar" class="tab-panel">
 
       <section class="hero">
-        <p class="hero-lead">Tell it the keys you can play, and where the band is. It finds the lowest capo that lets you use shapes you know.</p>
+        <p class="hero-lead">Tell it the shapes you're comfortable playing, and where the band is. It finds the lowest capo that lets you use them.</p>
 
-        <div class="led-window led-capo">
-          <span class="led-label">CAPO</span>
-          <span id="capoLed" class="led-value">0</span>
-          <span id="capoShape" class="led-foot">play in G</span>
+        <div class="dial-frame">
+          <div id="guitarDialBadge" class="dial-badge">
+            <span class="dial-label">Capo</span>
+            <span id="capoLed" class="dial-value">0</span>
+          </div>
+          <p id="capoShape" class="alt-line" style="margin-top:2px; font-weight:600;"></p>
+          <p id="capoAlt" class="alt-line"></p>
+
+          <div class="scale-track">
+            <div class="scale-bar"><span id="guitarScaleDot" class="scale-dot"></span></div>
+            <div class="scale-ticks"><span>0</span><span>fret</span><span>11</span></div>
+          </div>
         </div>
-        <p id="capoAlt" class="alt-line"></p>
 
-        <span class="knob-cap block-cap">Shapes I can play</span>
+        <span class="knob-cap" style="display:block; margin: 6px 0 8px 2px;">Shapes I can play</span>
         <div id="shapeChips" class="chips"></div>
 
         <label class="knob knob-wide">
@@ -124,7 +156,8 @@ Paste your song or chord list here..."></textarea>
       </section>
 
       <section class="panel">
-        <h2 class="panel-title">Your chords with the capo</h2>
+        <p class="kicker sage">Shapes with the capo</p>
+        <h2 class="panel-title">Your chords, fingered</h2>
         <p class="panel-note">Paste the song in the band's key. It shows the shapes you actually finger.</p>
 
         <textarea id="guitarInput" spellcheck="false" placeholder="B  E  F#m  A
@@ -132,7 +165,7 @@ Paste the song (in the band's key)..."></textarea>
 
         <div class="key-row">
           <label class="knob knob-wide">
-            <span class="knob-cap">Play in</span>
+            <span class="knob-cap">Play in &mdash; auto-picked, change only if you want</span>
             <select id="guitarPlayIn"></select>
           </label>
         </div>
@@ -146,7 +179,7 @@ Paste the song (in the band's key)..."></textarea>
 
     </div>
 
-    <footer class="footer">Built for the stage · works offline</footer>
+    <footer class="footer">Works offline once installed</footer>
   </div>
 
   <!-- ============ SHARED MODAL ============ -->
@@ -186,9 +219,30 @@ Paste the song (in the band's key)..."></textarea>
       });
     })();
   </script>
+  <script>
+    (function () {
+      var sw = document.getElementById('themeSwitch');
+      function paint() {
+        var current = document.documentElement.getAttribute('data-theme');
+        sw.querySelectorAll('button').forEach(function (b) {
+          b.classList.toggle('active', b.getAttribute('data-theme-choice') === current);
+        });
+      }
+      sw.addEventListener('click', function (e) {
+        var btn = e.target.closest('button');
+        if (!btn) return;
+        var choice = btn.getAttribute('data-theme-choice');
+        document.documentElement.setAttribute('data-theme', choice);
+        try { localStorage.setItem('theme', choice); } catch (err) {}
+        paint();
+      });
+      paint();
+    })();
+  </script>
   <script src="guitar-chords.js"></script>
   <script src="app.js"></script>
   <script src="guitar.js"></script>
+  <script src="ui-enhance.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {

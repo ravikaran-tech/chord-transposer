@@ -75,11 +75,11 @@ function svgForShape(shape, opts) {
   const W = padLeft + gridW + padRight;
   const H = padTop + NF * fretSp + padBottom;
 
-  const stroke = '#5a616e';
-  const dotColor = '#4C9DFF';
-  const openColor = '#8A8F9B';
-  const nutColor = '#ECEEF3';
-  const textColor = large ? '#06121f' : '#06121f';
+  const stroke = 'var(--line-strong)';
+  const dotColor = 'var(--primary)';
+  const openColor = 'var(--ink-faint)';
+  const nutColor = 'var(--ink)';
+  const textColor = 'var(--primary-ink)';
 
   const xOf = i => padLeft + i * strSp;
   const yOf = row => padTop + (row - 0.5) * fretSp;
@@ -181,7 +181,7 @@ function syncPlayIn(resetToBest) {
   const sel = document.getElementById('guitarPlayIn');
   const shapes = selectedShapesSorted();
   sel.innerHTML = shapes
-    .map(s => `<option value="${s.pc}">${s.name} shapes \u00b7 capo ${s.capo}</option>`)
+    .map((s, i) => `<option value="${s.pc}">${s.name} shapes \u00b7 capo ${s.capo}${i === 0 ? ' \u2014 recommended' : ''}</option>`)
     .join('');
   if (resetToBest || gState.playInPc === null || !gState.shapes.has(gState.playInPc)) {
     gState.playInPc = shapes[0].pc;
@@ -341,7 +341,7 @@ function initGuitar() {
 
   targetSel.addEventListener('change', () => {
     gState.targetValue = targetSel.value;
-    syncPlayIn(false);
+    syncPlayIn(true);
     updateCapo();
   });
   playInSel.addEventListener('change', () => {
