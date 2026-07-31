@@ -5,59 +5,197 @@
   <title>Chord Transposer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1e88e5">
+  <meta name="theme-color" content="#101216">
 </head>
 <body>
 
-  <div class="container">
-    <h2>🎹 Chord Transposer</h2>
+  <div class="stage">
 
-    <textarea id="inputText" placeholder="Paste song here..."></textarea>
+    <header class="topbar">
+      <span class="wordmark">CHORD&nbsp;TRANSPOSER</span>
+      <span class="wordmark-sub">stage tool</span>
+    </header>
 
-    <select id="toKey">
-  <optgroup label="Major Keys">
-    <option value="C">C</option>
-    <option value="C#">C#</option>
-    <option value="D">D</option>
-    <option value="D#">D#</option>
-    <option value="E">E</option>
-    <option value="F">F</option>
-    <option value="F#">F#</option>
-    <option value="G">G</option>
-    <option value="G#">G#</option>
-    <option value="A">A</option>
-    <option value="A#">A#</option>
-    <option value="B">B</option>
-  </optgroup>
+    <nav class="tabs" role="tablist">
+      <button class="tab-btn active" data-target="tab-piano" role="tab">Piano</button>
+      <button class="tab-btn" data-target="tab-guitar" role="tab">Guitar</button>
+    </nav>
 
-  <optgroup label="Minor Keys">
-    <option value="Cm">C minor</option>
-    <option value="C#m">C# minor</option>
-    <option value="Dm">D minor</option>
-    <option value="D#m">D# minor</option>
-    <option value="Em">E minor</option>
-    <option value="Fm">F minor</option>
-    <option value="F#m">F# minor</option>
-    <option value="Gm">G minor</option>
-    <option value="G#m">G# minor</option>
-    <option value="Am">A minor</option>
-    <option value="A#m">A# minor</option>
-    <option value="Bm">B minor</option>
-  </optgroup>
-</select>
+    <!-- ========================================================
+         PIANO TAB
+    ========================================================= -->
+    <div id="tab-piano" class="tab-panel active">
 
-    <button onclick="transpose()">Transpose</button>
-    <button onclick="exportPDF()">Export as PDF</button>
+      <section class="hero">
+        <p class="hero-lead">You play in one key. The band moved to another. Pick both — the readout gives you the transpose amount.</p>
 
-    <p id="detectedKeyInfo" class="detected-key"></p>
-    <pre id="outputText"></pre>
-    <h3 class="chord-ref-title">Chord Reference</h3>
-    <div id="pianoChords"></div>
+        <div class="led-window">
+          <span class="led-label">TRANSPOSE</span>
+          <span id="ledValue" class="led-value">0</span>
+        </div>
+        <p id="quickResultAlt" class="alt-line"></p>
+
+        <div class="knob-row">
+          <label class="knob">
+            <span class="knob-cap">My key</span>
+            <select id="quickFromKey" data-keys="major-minor"></select>
+          </label>
+          <span class="knob-arrow">&rarr;</span>
+          <label class="knob">
+            <span class="knob-cap">Band's key</span>
+            <select id="quickToKey" data-keys="major-minor"></select>
+          </label>
+        </div>
+        <button id="quickTransposeBtn" class="btn btn-ghost">Update readout</button>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">Song &amp; chord transposer</h2>
+        <p class="panel-note">Paste a whole song with lyrics, or just a chord list like <code>C, F, G</code>.</p>
+
+        <textarea id="inputText" spellcheck="false" placeholder="C  F  G  Am
+Paste your song or chord list here..."></textarea>
+
+        <div class="key-row">
+          <label class="knob">
+            <span class="knob-cap">From</span>
+            <select id="fromKey" data-keys="auto-major-minor"></select>
+          </label>
+          <label class="knob">
+            <span class="knob-cap">To</span>
+            <select id="toKey" data-keys="major-minor" data-default="D"></select>
+          </label>
+        </div>
+
+        <div class="action-row">
+          <button id="transposeBtn" class="btn btn-primary">Transpose</button>
+          <button id="stepDownBtn" class="btn btn-step" aria-label="Down a semitone">&minus;1</button>
+          <button id="stepUpBtn" class="btn btn-step" aria-label="Up a semitone">+1</button>
+        </div>
+
+        <p id="detectedInfo" class="detected-info">Paste a song or chord list above, then transpose.</p>
+
+        <pre id="outputText" class="output"></pre>
+
+        <div class="action-row secondary">
+          <button id="copyBtn" class="btn btn-ghost small">Copy</button>
+          <button id="exportBtn" class="btn btn-ghost small">Export PDF</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">On the keyboard</h2>
+        <p class="panel-note">Every chord in the result. Tap one to enlarge and hear it.</p>
+        <div id="pianoChords" class="chord-grid">
+          <p class="empty-hint">Transpose a song or chord list to see its shapes on the keyboard.</p>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ========================================================
+         GUITAR TAB
+    ========================================================= -->
+    <div id="tab-guitar" class="tab-panel">
+
+      <section class="hero">
+        <p class="hero-lead">Tell it the keys you can play, and where the band is. It finds the lowest capo that lets you use shapes you know.</p>
+
+        <div class="led-window led-capo">
+          <span class="led-label">CAPO</span>
+          <span id="capoLed" class="led-value">0</span>
+          <span id="capoShape" class="led-foot">play in G</span>
+        </div>
+        <p id="capoAlt" class="alt-line"></p>
+
+        <span class="knob-cap block-cap">Shapes I can play</span>
+        <div id="shapeChips" class="chips"></div>
+
+        <label class="knob knob-wide">
+          <span class="knob-cap">Band's key</span>
+          <select id="guitarTargetKey" data-keys="major-minor" data-default="B"></select>
+        </label>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">Your chords with the capo</h2>
+        <p class="panel-note">Paste the song in the band's key. It shows the shapes you actually finger.</p>
+
+        <textarea id="guitarInput" spellcheck="false" placeholder="B  E  F#m  A
+Paste the song (in the band's key)..."></textarea>
+
+        <div class="key-row">
+          <label class="knob knob-wide">
+            <span class="knob-cap">Play in</span>
+            <select id="guitarPlayIn"></select>
+          </label>
+        </div>
+
+        <button id="guitarTransposeBtn" class="btn btn-primary full">Show shapes</button>
+
+        <p id="guitarInfo" class="detected-info"></p>
+        <pre id="guitarOutput" class="output"></pre>
+        <div id="guitarDiagrams" class="chord-grid"></div>
+      </section>
+
+    </div>
+
+    <footer class="footer">Built for the stage · works offline</footer>
   </div>
 
+  <!-- ============ SHARED MODAL ============ -->
+  <div id="chordModal" class="modal-overlay">
+    <div class="modal-content">
+      <button id="modalCloseBtn" class="modal-close" aria-label="Close">&times;</button>
+      <h3 id="modalTitle" class="modal-title"></h3>
+      <div id="modalSub" class="chord-sub"></div>
+      <div id="modalPianoContainer"></div>
+      <button id="modalPlayBtn" class="btn btn-primary modal-play">&#9654;&nbsp; Play chord</button>
+    </div>
+  </div>
+
+  <script>
+    // Populate key selectors from a single source of truth.
+    (function () {
+      var MAJOR = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+      var MINOR = ['Cm','C#m','Dm','Ebm','Em','Fm','F#m','Gm','G#m','Am','Bbm','Bm'];
+      function opt(v, label, selected) {
+        return '<option value="' + v + '"' + (selected ? ' selected' : '') + '>' + (label || v) + '</option>';
+      }
+      function majorGroup(sel) {
+        return '<optgroup label="Major">' + MAJOR.map(function (k) { return opt(k, k, k === sel); }).join('') + '</optgroup>';
+      }
+      function minorGroup(sel) {
+        return '<optgroup label="Minor">' + MINOR.map(function (k) { return opt(k, k.replace('m',' min'), k === sel); }).join('') + '</optgroup>';
+      }
+      document.querySelectorAll('select[data-keys]').forEach(function (el) {
+        var kind = el.getAttribute('data-keys');
+        var def = el.getAttribute('data-default');
+        var html = '';
+        if (kind.indexOf('auto') === 0) html += opt('auto', 'Auto-detect', !def);
+        var sel = def || (el.id === 'quickFromKey' ? 'C#' : el.id === 'quickToKey' ? 'E' : null);
+        html += majorGroup(sel);
+        html += minorGroup(sel);
+        el.innerHTML = html;
+      });
+    })();
+  </script>
+  <script src="guitar-chords.js"></script>
   <script src="app.js"></script>
+  <script src="guitar.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./service-worker.js').catch(function () {});
+      });
+    }
+  </script>
 
 </body>
 </html>

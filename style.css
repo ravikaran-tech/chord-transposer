@@ -1,254 +1,653 @@
-/* =========================
-   GLOBAL RESET
-========================= */
-* {
-  box-sizing: border-box;
+/* ============================================================
+   CHORD TRANSPOSER — stage instrument panel
+   Palette grounded in a synth's front panel: recessed amber
+   LED readout (the signature), cool-blue "pressed note"
+   highlight, black/ivory keybed as recurring material.
+============================================================ */
+
+:root {
+  --bg:            #101216;
+  --panel:         #191C22;
+  --panel-inset:   #0B0D10;
+  --surface:       #21252D;
+  --surface-hi:    #2A2F38;
+  --ink:           #ECEEF3;
+  --ink-dim:       #8A8F9B;
+  --line:          #2A2E37;
+  --led:           #FFB020;
+  --led-dim:       #7a5410;
+  --led-glow:      rgba(255, 176, 32, 0.35);
+  --active:        #4C9DFF;
+  --active-soft:   #9FCBFF;
+  --white-key:     #F1F3F6;
+  --black-key:     #0C0E12;
+  --danger:        #FF6B6B;
+
+  --display: 'Chakra Petch', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --body: system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
-  margin: 0;
-  padding: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  background: #f4f6f8;
-  color: #222;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #1a1e26 0%, var(--bg) 60%);
+  min-height: 100vh;
 }
 
-/* =========================
-   MAIN CONTAINER
-========================= */
-.container {
-  max-width: 900px;
-  margin: auto;
-  padding: 16px;
+.stage {
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
 }
 
-/* =========================
-   HEADINGS
-========================= */
-h2 {
+/* ---------- Top bar ---------- */
+.topbar {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 2px 18px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 22px;
+}
+
+.wordmark {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  font-size: 18px;
+  color: var(--ink);
+}
+
+.wordmark-sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--led);
+  margin-left: auto;
+}
+
+/* ---------- Hero ---------- */
+.hero { margin-bottom: 30px; }
+
+.hero-lead {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+  margin: 0 0 18px;
+}
+
+/* Signature: recessed amber LED window */
+.led-window {
+  position: relative;
+  background: var(--panel-inset);
+  border: 1px solid #05060a;
+  border-radius: 14px;
+  box-shadow:
+    inset 0 2px 10px rgba(0,0,0,0.9),
+    inset 0 0 0 1px rgba(255,255,255,0.02),
+    0 1px 0 rgba(255,255,255,0.04);
+  padding: 18px 22px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+
+.led-window::before {
+  /* faint scanline sheen across the display */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.015) 0px,
+    rgba(255,255,255,0.015) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events: none;
+}
+
+.led-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.42em;
+  color: var(--led-dim);
+  text-indent: 0.42em;
+  margin-bottom: 2px;
+}
+
+.led-value {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 74px;
+  line-height: 1;
+  color: var(--led);
+  text-shadow:
+    0 0 6px var(--led-glow),
+    0 0 22px var(--led-glow);
+  font-variant-numeric: tabular-nums;
+}
+
+.led-value.flash { animation: ledFlash 0.28s ease-out; }
+
+@keyframes ledFlash {
+  0%   { opacity: 0.35; transform: translateY(1px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.alt-line {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-dim);
   text-align: center;
-  margin-bottom: 16px;
-  color: #1e88e5;
+  margin: 10px 0 20px;
+  min-height: 16px;
 }
 
-/* =========================
-   INPUT AREA
-========================= */
-textarea {
-  width: 100%;
-  min-height: 200px;
-  padding: 12px;
-  font-family: monospace;
-  font-size: 15px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  resize: vertical;
+/* ---------- Knobs / selects ---------- */
+.knob-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
   margin-bottom: 12px;
 }
 
-/* =========================
-   SELECT + BUTTONS
-========================= */
-select,
-button {
-  width: 100%;
-  padding: 12px;
-  font-size: 16px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  margin-bottom: 10px;
+.knob-row .knob { flex: 1; }
+
+.knob-arrow {
+  color: var(--ink-dim);
+  font-size: 20px;
+  padding-bottom: 12px;
+}
+
+.knob {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.knob-cap {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  padding-left: 2px;
 }
 
 select {
-  background: #fff;
+  width: 100%;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 13px 14px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink-dim) 50%),
+    linear-gradient(135deg, var(--ink-dim) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 2px),
+    calc(100% - 13px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
 }
 
-button {
-  background: #1e88e5;
-  color: #fff;
-  cursor: pointer;
-  border: none;
-  font-weight: bold;
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--active);
+  outline-offset: 2px;
 }
 
-button:hover {
-  background: #1565c0;
+/* ---------- Panels ---------- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  margin-bottom: 20px;
 }
 
-/* =========================
-   DETECTED KEY INFO
-========================= */
-.detected-key {
-  margin: 10px 0 0;
+.panel-title {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  margin: 0 0 4px;
+}
+
+.panel-note {
+  font-size: 13px;
+  color: var(--ink-dim);
+  margin: 0 0 14px;
+  line-height: 1.45;
+}
+
+.panel-note code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--surface);
+  padding: 1px 6px;
+  border-radius: 5px;
+  color: var(--active-soft);
+}
+
+/* ---------- Textarea ---------- */
+textarea {
+  width: 100%;
+  min-height: 150px;
+  resize: vertical;
+  font-family: var(--mono);
   font-size: 14px;
-  color: #555;
-  font-style: italic;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--panel-inset);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 14px;
 }
 
-/* =========================
-   OUTPUT AREA
-========================= */
-pre {
-  white-space: pre-wrap;
-  background: #ffffff;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 12px;
-  margin-top: 16px;
-  font-family: monospace;
-  font-size: 15px;
-}
+textarea::placeholder { color: #545a66; }
 
-/* =========================
-   PIANO CHORDS CONTAINER
-========================= */
-#pianoChords {
-  margin-top: 24px;
-}
-
-/* =========================
-   MOBILE-FIRST → DESKTOP
-========================= */
-@media (min-width: 768px) {
-  .container {
-    padding: 24px;
-  }
-
-  select,
-  button {
-    width: auto;
-    min-width: 180px;
-  }
-
-  select {
-    margin-right: 8px;
-  }
-}
-/* =========================
-   PIANO KEYBOARD
-========================= */
-.piano {
-  position: relative;
+/* ---------- Key + action rows ---------- */
+.key-row {
   display: flex;
-  height: 80px;
-  margin-top: 6px;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.key-row .knob { flex: 1; }
+
+.action-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+.action-row.secondary { margin-top: 12px; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 15px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 13px 16px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, transform 0.06s;
+  color: var(--ink);
+}
+.btn:active { transform: translateY(1px); }
+
+.btn-primary {
+  flex: 1;
+  background: var(--active);
+  color: #06121f;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.btn-primary:hover { background: #64abff; }
+
+.btn-step {
+  min-width: 58px;
+  background: var(--surface);
+  border-color: var(--line);
+  font-family: var(--mono);
+  font-size: 16px;
+}
+.btn-step:hover { background: var(--surface-hi); }
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink);
+  width: 100%;
+}
+.btn-ghost:hover { background: var(--surface); }
+.btn-ghost.small { font-size: 13px; padding: 10px 14px; }
+
+.btn-ghost.copied {
+  border-color: var(--active);
+  color: var(--active);
 }
 
-.key {
-  position: relative;
-  border: 1px solid #333;
+/* ---------- Detected info + output ---------- */
+.detected-info {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink-dim);
+  margin: 14px 0 8px;
+}
+.detected-info strong { color: var(--led); font-weight: 600; }
+
+.output {
+  white-space: pre-wrap;
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--active-soft);
+  background: var(--panel-inset);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin: 0;
+  min-height: 28px;
+  overflow-x: auto;
 }
 
-.white {
-  width: 32px;
-  height: 80px;
-  background: #fff;
-  z-index: 1;
-}
-
-.black {
-  width: 20px;
-  height: 50px;
-  background: #000;
-  position: absolute;
-  top: 0;
-  z-index: 2;
-  margin-left: -10px;
-}
-
-/* Highlighted notes */
-.white.active {
-  background: #90caf9;
-}
-
-.black.active {
-  background: #1e88e5;
-}
-
-/* =========================
-   CHORD REFERENCE SECTION
-========================= */
-.chord-ref-title {
-  margin-top: 32px;
-  margin-bottom: 12px;
-  color: #333;
-  border-bottom: 2px solid #e0e0e0;
-  padding-bottom: 6px;
-}
-
-#pianoChords {
+/* ---------- Chord grid ---------- */
+.chord-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: 12px;
+}
+@media (min-width: 460px) {
+  .chord-grid { grid-template-columns: 1fr 1fr; }
 }
 
-/* Desktop / tablet grid */
-@media (min-width: 768px) {
-  #pianoChords {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.chord-block {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.12s, transform 0.08s, box-shadow 0.12s;
+}
+.chord-block:hover,
+.chord-block:focus-visible {
+  border-color: var(--active);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  outline: none;
 }
 
-@media print {
-  textarea,
-  select,
-  button {
-    display: none !important;
-  }
-
-  body {
-    background: white;
-  }
-
-  .container {
-    max-width: 100%;
-    box-shadow: none;
-    padding: 0;
-  }
-
-  pre {
-    white-space: pre-wrap;
-    font-size: 14px;
-  }
-
-  #pianoChords {
-    page-break-before: always;
-  }
+.chord-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
+
+.chord-name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--ink);
+}
+
+.play-btn {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--panel-inset);
+  color: var(--active);
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 2px;
+}
+.play-btn:hover { background: var(--active); color: #06121f; border-color: var(--active); }
+
+.chord-sub {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+  margin: 4px 0 10px;
+}
+
+.empty-hint {
+  grid-column: 1 / -1;
+  color: var(--ink-dim);
+  font-size: 14px;
+  text-align: center;
+  padding: 18px 0;
+  margin: 0;
+}
+
+/* ---------- Piano keybed ---------- */
 .piano {
   position: relative;
   display: flex;
-  height: 160px;
-  margin-top: 10px;
+  margin: 0 auto;
 }
 
 .white-key {
-  width: 60px;
-  height: 160px;
-  border: 1px solid #333;
-  background: white;
-  position: relative;
+  background: var(--white-key);
+  border: 1px solid #0a0b0d;
+  border-radius: 0 0 4px 4px;
   box-sizing: border-box;
+  position: relative;
+  z-index: 1;
 }
-
 .white-key.active {
-  background: #9fd0ff;
+  background: var(--active-soft);
+  box-shadow: inset 0 -8px 0 rgba(76,157,255,0.55);
 }
 
 .black-key {
   position: absolute;
-  width: 40px;
-  height: 100px;
-  background: black;
   top: 0;
+  background: var(--black-key);
+  border-radius: 0 0 3px 3px;
   z-index: 2;
-  border-radius: 0 0 4px 4px;
+  box-shadow: 0 2px 3px rgba(0,0,0,0.6);
 }
-
 .black-key.active {
-  background: #3b82f6;
+  background: var(--active);
+  box-shadow: 0 2px 6px rgba(76,157,255,0.6);
 }
 
+/* ---------- Footer ---------- */
+.footer {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #4a4f5a;
+  padding-top: 8px;
+}
 
+/* ---------- Modal ---------- */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 8, 12, 0.78);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; }
 
+.modal-content {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 26px 24px 22px;
+  max-width: 95vw;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.modal-close:hover { background: var(--surface-hi); }
+
+.modal-title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 30px;
+  margin: 0 0 4px;
+}
+
+#modalPianoContainer {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0 18px;
+}
+
+.modal-play { width: 100%; }
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .led-value.flash { animation: none; }
+  .btn, .chord-block { transition: none; }
+}
+
+/* ---------- Print ---------- */
+@media print {
+  body { background: #fff; color: #000; }
+  .hero, .topbar, textarea, select, .action-row, .footer,
+  .panel-note, .play-btn { display: none !important; }
+  .panel { border: none; background: #fff; }
+  .output { color: #000; border: 1px solid #ccc; }
+  .chord-name, .panel-title, .chord-sub { color: #000; }
+  .white-key { background: #fff; }
+  .white-key.active { background: #cfe2ff; }
+}
+
+/* ============================================================
+   TABS
+============================================================ */
+.tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--panel-inset);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 4px;
+  margin-bottom: 24px;
+}
+
+.tab-btn {
+  flex: 1;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  color: var(--ink-dim);
+  background: transparent;
+  border: none;
+  border-radius: 9px;
+  padding: 11px 0;
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s;
+}
+.tab-btn:hover { color: var(--ink); }
+.tab-btn.active {
+  background: var(--surface-hi);
+  color: var(--ink);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; animation: tabIn 0.2s ease-out; }
+
+@keyframes tabIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   CAPO READOUT + SHAPE CHIPS
+============================================================ */
+.led-capo .led-value { color: var(--led); }
+
+.led-foot {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--led-dim);
+  margin-top: 4px;
+}
+
+.block-cap {
+  display: block;
+  margin: 6px 0 8px 2px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.chip {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 16px;
+  min-width: 46px;
+  padding: 10px 4px;
+  flex: 1;
+  color: var(--ink-dim);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.chip:hover { color: var(--ink); border-color: var(--surface-hi); }
+.chip.active {
+  color: #06121f;
+  background: var(--active);
+  border-color: var(--active);
+}
+
+.knob-wide { width: 100%; }
+.btn.full { width: 100%; }
+
+/* ============================================================
+   GUITAR FRETBOARD DIAGRAMS
+============================================================ */
+.guitar-block { text-align: center; }
+
+.fret-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.fret-svg { display: block; }
+
+#modalPianoContainer .fret-svg { margin: 0 auto; }
 
