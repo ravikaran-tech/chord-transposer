@@ -44,6 +44,50 @@
     </nav>
 
     <!-- ========================================================
+         LIVE CHORD LOOKUP — shared by both tabs
+         Mid-song: someone calls one chord in one key, this
+         resolves what to play/say in the other key.
+    ========================================================= -->
+    <section class="panel live-lookup" id="liveLookupCard">
+      <p class="kicker sage">Live chord lookup</p>
+      <h2 class="panel-title">Mid-song translator</h2>
+      <p class="panel-note">Set both keys once. Then look up any single chord called out live &mdash; even an accidental not in the song's key.</p>
+
+      <div class="key-row">
+        <label class="knob">
+          <span class="knob-cap">Band key</span>
+          <select id="llBandKey" data-keys="major-minor" data-default="D"></select>
+        </label>
+        <label class="knob">
+          <span class="knob-cap">Your key</span>
+          <select id="llYourKey" data-keys="major-minor" data-default="C#"></select>
+        </label>
+      </div>
+
+      <div class="ll-direction" role="group" aria-label="Direction">
+        <button type="button" id="llDirBandToYou" class="chip ll-dir-btn active">Band called it &rarr; I play</button>
+        <button type="button" id="llDirYouToBand" class="chip ll-dir-btn">I called it &rarr; band plays</button>
+      </div>
+
+      <div class="key-row">
+        <label class="knob">
+          <span class="knob-cap" id="llRootLabel">Chord they called</span>
+          <select id="llRoot"></select>
+        </label>
+        <label class="knob">
+          <span class="knob-cap">Quality</span>
+          <select id="llQuality"></select>
+        </label>
+      </div>
+
+      <div class="ll-result">
+        <span id="llBadge" class="ll-badge">&mdash;</span>
+        <p id="llSub" class="alt-line"></p>
+        <p id="llGuitarNote" class="alt-line ll-guitar-note"></p>
+      </div>
+    </section>
+
+    <!-- ========================================================
          PIANO TAB
     ========================================================= -->
     <div id="tab-piano" class="tab-panel active">
@@ -242,6 +286,7 @@ Paste the song (in the band's key)..."></textarea>
   <script src="guitar-chords.js"></script>
   <script src="app.js"></script>
   <script src="guitar.js"></script>
+  <script src="live-lookup.js"></script>
   <script src="ui-enhance.js"></script>
   <script>
     if ('serviceWorker' in navigator) {

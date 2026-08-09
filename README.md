@@ -50,6 +50,32 @@ Installable as a PWA (Progressive Web App): works offline, no App Store needed.
   [`@tombatossals/chords-db`](https://github.com/tombatossals/chords-db)
   (MIT-licensed), bundled locally so diagrams work fully offline.
 
+### 🎤 Live Chord Lookup (Piano + Guitar)
+
+A small always-visible card above both tabs for the moment mid-song when
+someone calls out a chord live — including an accidental that isn't in the
+song's key, so the full transposer's key detection shouldn't be involved.
+
+- Set **Band Key** and **Your Key** once (Your Key defaults to `C#`, but is
+  fully editable). Both are remembered between visits.
+- Flip the direction depending on who's talking:
+  - **Band called it → I play** — they shout a chord in their key, you get
+    what to play in yours.
+  - **I called it → band plays** — you played an accidental in your key,
+    you get the plain chord name to tell the band in theirs.
+- Pick the root and quality from dropdowns (no typing, fast to use on stage)
+  and the answer appears instantly.
+- On the Guitar tab, **Band → I play** also suggests a capo + shape using
+  whichever open shapes you already selected in "Shapes I can play" — with
+  a note that this is approximate for minor chords, since shape families
+  are open/major voicings (see [Known limitations](#known-limitations)).
+- Independent of the full song transposer and its key-detection logic —
+  a live accidental is never mistaken for the song's tonic.
+
+**Example:** Band plays in **G**, your instrument reads **C#** (a `+6`
+transpose). Mid-song someone calls an accidental **D#** — the card shows
+**A**: press A, your transpose device turns it into the D# the band hears.
+
 ---
 
 ## Example
@@ -151,9 +177,22 @@ does the rest of the transposing for you.
   piano rendering, Web Audio playback.
 - `guitar.js` + `guitar-chords.js` — guitar engine: capo math, shape-family
   transposition, SVG fretboard diagrams, bundled fingering database.
+- `live-lookup.js` — Live Chord Lookup widget: single-chord Band Key ↔ Your
+  Key translator shared by both tabs. Reads note/chord helpers from `app.js`
+  and shape/capo helpers from `guitar.js` read-only; does not modify either.
 - `service-worker.js` — offline caching (network-first for the app shell, so
   new deploys are picked up automatically; cache-first for everything else).
 - `manifest.json` — installable as a home-screen app on mobile.
+
+## Known limitations
+
+- Guitar shape families (C/A/G/E/D) are open **major** voicings only — there
+  are no dedicated minor-shape families yet, so capo/shape suggestions for
+  minor chords (on the capo finder and in Live Chord Lookup) are approximate.
+- If a song (or a live-called accidental) has no good capo position in
+  common with your other shapes, the tool still shows its best computed
+  answer — it doesn't yet warn "this chord doesn't fit."
+- Standard tuning (EADGBE) only.
 
 ## Roadmap / ideas
 
@@ -162,6 +201,7 @@ does the rest of the transposing for you.
 - Minor-key shape families for the capo finder
 - Nashville number / Roman numeral display
 - Auto-save the last song
+- In-app warning when a chord has no good shared capo position
 
 ## Deployment
 
