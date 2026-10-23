@@ -755,6 +755,45 @@ textarea::placeholder { color: var(--ink-faint); }
 /* ---------- Live chord lookup (mid-song translator) ---------- */
 .live-lookup .key-row:first-of-type { margin-bottom: 14px; }
 
+.live-lookup .ll-names { margin-bottom: 6px; }
+
+.ll-name-input {
+  width: 100%;
+  min-width: 0;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 16px; /* 16px stops iOS zooming on focus */
+  color: var(--ink);
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  transition: border-color 0.12s;
+}
+.ll-name-input:hover { border-color: var(--line-strong); }
+.ll-name-input::placeholder { color: var(--ink-faint); font-weight: 500; }
+.ll-name-input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.ll-clear-names {
+  display: block;
+  margin: 0 0 12px auto;
+  padding: 4px 2px;
+  background: none;
+  border: none;
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.ll-clear-names:hover { color: var(--ink); }
+.ll-clear-names[hidden] { display: none; }
+
 .ll-direction {
   display: flex;
   gap: 8px;

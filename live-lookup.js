@@ -66,8 +66,46 @@ const LL_STORAGE_KEY = 'liveLookup.v1';
 const llState = {
   direction: 'band-to-you', // 'band-to-you' | 'you-to-band'
   root: 'F#',
-  quality: ''
+  quality: '',
+  bandName: '', // typed name of the band player; '' = use default wording
+  yourName: ''  // typed name of the guitar player (you)
 };
+
+const LL_NAME_MAX = 20;
+
+function llCleanName(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim().slice(0, LL_NAME_MAX);
+}
+
+// All name-dependent wording lives here. With no names typed, every
+// string matches the original wording exactly.
+function llWords() {
+  const band = llState.bandName;
+  const you = llState.yourName;
+  return {
+    bandKeyLabel: band ? `${band}'s key` : 'Band key',
+    yourKeyLabel: you ? `${you}'s key` : 'Your key',
+    bandToYouBtn: `${band ? band + ' called it (band)' : 'Band called it'} → ${you ? you + ' plays' : 'I play'}`,
+    youToBandBtn: `${you ? you + ' called it (you)' : 'I called it'} → ${band ? band + ' plays' : 'band plays'}`,
+    rootLabelBand: band ? `Chord ${band} called` : 'Chord they called',
+    rootLabelYou: you ? `Chord ${you} played` : 'Chord you played',
+    bandTag: band ? ` (${band})` : '',
+    youTag: you ? ` (${you})` : '',
+    playPrefix: you ? `${you}, play` : 'Play',
+    tellBand: band ? `Tell ${band}` : 'Tell the band'
+  };
+}
+
+function llApplyNames() {
+  const w = llWords();
+  const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+  set('llBandKeyLabel', w.bandKeyLabel);
+  set('llYourKeyLabel', w.yourKeyLabel);
+  set('llDirBandToYou', w.bandToYouBtn);
+  set('llDirYouToBand', w.youToBandBtn);
+  const clearBtn = document.getElementById('llClearNames');
+  if (clearBtn) clearBtn.hidden = !(llState.bandName || llState.yourName);
+}
 
 /* ------------------------------------------------------------
    Setup
@@ -100,6 +138,8 @@ function llLoadSavedState() {
     if (typeof saved.quality === 'string' && CHORD_FORMULAS.hasOwnProperty(saved.quality)) {
       llState.quality = saved.quality;
     }
+    llState.bandName = llCleanName(saved.bandName);
+    llState.yourName = llCleanName(saved.yourName);
     return saved;
   } catch (e) {
     return null;
@@ -113,7 +153,9 @@ function llSaveState(bandKeyValue, yourKeyValue) {
       yourKey: yourKeyValue,
       direction: llState.direction,
       root: llState.root,
-      quality: llState.quality
+      quality: llState.quality,
+      bandName: llState.bandName,
+      yourName: llState.yourName
     }));
   } catch (e) {
     // Storage unavailable (private browsing, etc.) — non-fatal, just skip persistence.
@@ -131,13 +173,25 @@ function llGuitarTabActive() {
   return !!(panel && panel.classList.contains('active'));
 }
 
-function llBestShapeForPc(pc) {
+// Families whose open chord also has a common open MINOR form (Am, Em, Dm).
+const LL_MINOR_SHAPE_PCS = new Set([9, 4, 2]);
+
+function llBestShapeForPc(pc, isMinor) {
   if (typeof SHAPE_FAMILIES === 'undefined' || typeof gState === 'undefined' || !gState.shapes) {
     return null;
   }
-  const options = SHAPE_FAMILIES
-    .filter(f => gState.shapes.has(f.pc))
-    .map(f => ({ name: f.name, pc: f.pc, capo: ((pc - f.pc) % 12 + 12) % 12 }))
+  const mine = SHAPE_FAMILIES.filter(f => gState.shapes.has(f.pc));
+  // For a minor chord, prefer the user's shapes that have an open minor
+  // form, so e.g. Am is "open Am shape", not "capo 2, G shape" (= Gm).
+  const minorCapable = isMinor ? mine.filter(f => LL_MINOR_SHAPE_PCS.has(f.pc)) : [];
+  const pool = minorCapable.length ? minorCapable : mine;
+  const options = pool
+    .map(f => ({
+      name: f.name,
+      pc: f.pc,
+      capo: ((pc - f.pc) % 12 + 12) % 12,
+      minorShape: minorCapable.length > 0
+    }))
     .sort((a, b) => a.capo - b.capo);
   return options.length ? options[0] : null;
 }
@@ -162,19 +216,21 @@ function llRender() {
   const formula = CHORD_FORMULAS[quality];
   const bandToYou = llState.direction === 'band-to-you';
 
-  if (rootLabel) rootLabel.textContent = bandToYou ? 'Chord they called' : 'Chord you played';
+  const words = llWords();
+  llApplyNames();
+  if (rootLabel) rootLabel.textContent = bandToYou ? words.rootLabelBand : words.rootLabelYou;
 
   let outputPc, outputFlats, fromLabel, toLabel;
   if (bandToYou) {
     outputPc = inputPc + (yourMeta.pc - bandMeta.pc);
     outputFlats = yourMeta.flats;
-    fromLabel = bandMeta.name;
-    toLabel = yourMeta.name;
+    fromLabel = bandMeta.name + words.bandTag;
+    toLabel = yourMeta.name + words.youTag;
   } else {
     outputPc = inputPc + (bandMeta.pc - yourMeta.pc);
     outputFlats = bandMeta.flats;
-    fromLabel = yourMeta.name;
-    toLabel = bandMeta.name;
+    fromLabel = yourMeta.name + words.youTag;
+    toLabel = bandMeta.name + words.bandTag;
   }
 
   const outputRoot = spell(outputPc, outputFlats);
@@ -186,20 +242,22 @@ function llRender() {
   if (llGuitarTabActive()) {
     guitarNote.style.display = '';
     if (bandToYou) {
-      const shape = llBestShapeForPc(outputPc);
+      const isMinor = !!(formula && formula.minor);
+      const shape = llBestShapeForPc(outputPc, isMinor);
       if (shape) {
+        const shapeName = shape.name + (shape.minorShape ? 'm' : '');
         let text = shape.capo === 0
-          ? `Play: open ${shape.name} shape`
-          : `Play: capo ${shape.capo}, ${shape.name} shape`;
-        if (formula && formula.minor) {
-          text += ' \u2014 your shapes are open/major families, so treat this as approximate for a minor chord.';
+          ? `${words.playPrefix}: open ${shapeName} shape`
+          : `${words.playPrefix}: capo ${shape.capo}, ${shapeName} shape`;
+        if (isMinor && !shape.minorShape) {
+          text += ' \u2014 none of your shapes has an open minor form (pick A, E or D shapes for that), so this one is approximate.';
         }
         guitarNote.textContent = text;
       } else {
         guitarNote.textContent = '';
       }
     } else {
-      guitarNote.textContent = `Tell the band: ${outputChord} \u2014 plain chord name, not a capo position.`;
+      guitarNote.textContent = `${words.tellBand}: ${outputChord} \u2014 plain chord name, not a capo position.`;
     }
   } else {
     guitarNote.style.display = 'none';
@@ -246,6 +304,29 @@ function initLiveLookup() {
   qualSel.value = llState.quality;
   if (bandToYouBtn) bandToYouBtn.classList.toggle('active', llState.direction === 'band-to-you');
   if (youToBandBtn) youToBandBtn.classList.toggle('active', llState.direction === 'you-to-band');
+
+  // Name boxes: typed names replace "band" / "I" wording everywhere in
+  // this card, and are saved with the keys so they come back next time.
+  const bandNameEl = document.getElementById('llBandName');
+  const yourNameEl = document.getElementById('llYourName');
+  const clearNamesBtn = document.getElementById('llClearNames');
+  if (bandNameEl) {
+    bandNameEl.value = llState.bandName;
+    bandNameEl.addEventListener('input', () => { llState.bandName = llCleanName(bandNameEl.value); llRender(); });
+  }
+  if (yourNameEl) {
+    yourNameEl.value = llState.yourName;
+    yourNameEl.addEventListener('input', () => { llState.yourName = llCleanName(yourNameEl.value); llRender(); });
+  }
+  if (clearNamesBtn) {
+    clearNamesBtn.addEventListener('click', () => {
+      llState.bandName = '';
+      llState.yourName = '';
+      if (bandNameEl) bandNameEl.value = '';
+      if (yourNameEl) yourNameEl.value = '';
+      llRender();
+    });
+  }
 
   bandSel.addEventListener('change', llRender);
   yourSel.addEventListener('change', llRender);

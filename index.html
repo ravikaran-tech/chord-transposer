@@ -53,13 +53,27 @@
       <h2 class="panel-title">Mid-song translator</h2>
       <p class="panel-note">Set both keys once. Then look up any single chord called out live &mdash; even an accidental not in the song's key.</p>
 
+      <div class="key-row ll-names">
+        <label class="knob">
+          <span class="knob-cap">Band name</span>
+          <input type="text" id="llBandName" class="ll-name-input" maxlength="20"
+                 placeholder="e.g. Hillary" autocomplete="off" autocapitalize="words" spellcheck="false">
+        </label>
+        <label class="knob">
+          <span class="knob-cap">Your name</span>
+          <input type="text" id="llYourName" class="ll-name-input" maxlength="20"
+                 placeholder="e.g. Allen" autocomplete="off" autocapitalize="words" spellcheck="false">
+        </label>
+      </div>
+      <button type="button" id="llClearNames" class="ll-clear-names" hidden>Clear names</button>
+
       <div class="key-row">
         <label class="knob">
-          <span class="knob-cap">Band key</span>
+          <span class="knob-cap" id="llBandKeyLabel">Band key</span>
           <select id="llBandKey" data-keys="major-minor" data-default="D"></select>
         </label>
         <label class="knob">
-          <span class="knob-cap">Your key</span>
+          <span class="knob-cap" id="llYourKeyLabel">Your key</span>
           <select id="llYourKey" data-keys="major-minor" data-default="C#"></select>
         </label>
       </div>

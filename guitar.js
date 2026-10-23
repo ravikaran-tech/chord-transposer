@@ -35,6 +35,50 @@ const SHAPE_FAMILIES = [
   { name: 'D', pc: 2 }
 ];
 
+// Relative minor of each family, used when the band is in a minor key
+// (an Am song uses the same open shapes as C, an Em song the same as G).
+const FAMILY_MINOR_NAME = { 0: 'Am', 9: 'F#m', 7: 'Em', 4: 'C#m', 2: 'Bm' };
+
+function familyLabel(fam, minorTarget) {
+  return minorTarget ? FAMILY_MINOR_NAME[fam.pc] : fam.name;
+}
+
+/* ------------------------------------------------------------
+   Spelling in the shape key
+   Every family key here (C A G E D) has a natural-letter tonic, so we
+   spell by scale degree: diatonic notes as in the key signature, #4
+   as a sharp, and b2/b3/b6/b7 as flats. In G that gives Bb, Eb, F and
+   C# (never A#, D#, E#), which is how guitarists read these chords.
+------------------------------------------------------------ */
+
+const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+const LETTER_PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+// Semitones above the tonic -> letter steps above the tonic letter.
+const DEGREE_LETTER_STEP = [0, 1, 1, 2, 2, 3, 3, 4, 5, 5, 6, 6];
+
+function spellInKey(pc, tonicName) {
+  const tonicLetter = tonicName.charAt(0);
+  const tonicPc = pcOf(tonicName);
+  const rel = (((pc - tonicPc) % 12) + 12) % 12;
+  const letter = LETTERS[(LETTERS.indexOf(tonicLetter) + DEGREE_LETTER_STEP[rel]) % 7];
+  let acc = (((pc - LETTER_PC[letter]) % 12) + 12) % 12;
+  if (acc > 6) acc -= 12;
+  if (acc === 0) return letter;
+  if (acc === 1) return letter + '#';
+  if (acc === -1) return letter + 'b';
+  return spell(pc, false); // safety net; not reached for C/A/G/E/D tonics
+}
+
+// Like transposeText (app.js), but spells results in the shape key.
+function transposeToShapeKey(input, shift, tonicName) {
+  CHORD_TOKEN_REGEX.lastIndex = 0;
+  return input.replace(CHORD_TOKEN_REGEX, (match, root, quality, bass) => {
+    const newRoot = spellInKey(pcOf(root) + shift, tonicName);
+    const newBass = bass ? '/' + spellInKey(pcOf(bass) + shift, tonicName) : '';
+    return newRoot + quality + newBass;
+  });
+}
+
 const gState = {
   shapes: new Set([2, 7, 0]), // default D, G, C
   targetValue: 'B',
@@ -45,15 +89,29 @@ const gState = {
    Fingering lookup
 ------------------------------------------------------------ */
 
-function guitarShape(rootPc, quality) {
+// Bass-note names as the chord db spells its slash-chord suffixes.
+const PC_TO_DBBASS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B'];
+
+// Returns { shape, bassMissing } or null. For slash chords (D/F#, Am/G)
+// it uses the db's real slash voicing when there is one; otherwise it
+// falls back to the plain chord and flags that the bass isn't shown.
+function guitarShape(rootPc, quality, bassPc) {
   const db = window.GUITAR_CHORDS;
   if (!db) return null;
   const root = PC_TO_DBROOT[((rootPc % 12) + 12) % 12];
   const suffix = SUFFIX_MAP.hasOwnProperty(quality) ? SUFFIX_MAP[quality] : 'major';
   const byRoot = db[root];
   if (!byRoot) return null;
+
+  const hasBass = bassPc !== null && bassPc !== undefined && bassPc !== -1 &&
+    ((bassPc % 12) + 12) % 12 !== ((rootPc % 12) + 12) % 12;
+  if (hasBass && (suffix === 'major' || suffix === 'minor')) {
+    const slashKey = (suffix === 'minor' ? 'm/' : '/') + PC_TO_DBBASS[((bassPc % 12) + 12) % 12];
+    if (byRoot[slashKey]) return { shape: byRoot[slashKey][0], bassMissing: false };
+  }
+
   const entry = byRoot[suffix] || byRoot['major'];
-  return entry ? entry[0] : null;
+  return entry ? { shape: entry[0], bassMissing: hasBass } : null;
 }
 
 /* ------------------------------------------------------------
@@ -140,8 +198,15 @@ function svgForShape(shape, opts) {
    Capo finder
 ------------------------------------------------------------ */
 
+function targetIsMinor() {
+  return keyMeta(gState.targetValue).minor;
+}
+
+// The key whose open shapes the song uses: a minor band key is played
+// with its relative major's shapes (Am -> C shapes, Em -> G shapes).
 function targetPc() {
-  return keyMeta(gState.targetValue).pc;
+  const meta = keyMeta(gState.targetValue);
+  return meta.minor ? (meta.pc + 3) % 12 : meta.pc;
 }
 
 function capoForShape(shapePc) {
@@ -180,8 +245,9 @@ function selectedShapesSorted() {
 function syncPlayIn(resetToBest) {
   const sel = document.getElementById('guitarPlayIn');
   const shapes = selectedShapesSorted();
+  const minor = targetIsMinor();
   sel.innerHTML = shapes
-    .map((s, i) => `<option value="${s.pc}">${s.name} shapes \u00b7 capo ${s.capo}${i === 0 ? ' \u2014 recommended' : ''}</option>`)
+    .map((s, i) => `<option value="${s.pc}">${familyLabel(s, minor)} shapes \u00b7 capo ${s.capo}${i === 0 ? ' \u2014 recommended' : ''}</option>`)
     .join('');
   if (resetToBest || gState.playInPc === null || !gState.shapes.has(gState.playInPc)) {
     gState.playInPc = shapes[0].pc;
@@ -198,15 +264,18 @@ function updateCapo() {
   const foot = document.getElementById('capoShape');
   const alt = document.getElementById('capoAlt');
 
+  const minor = targetIsMinor();
+  const chosenName = familyLabel(chosen, minor);
+
   led.textContent = chosen.capo === 0 ? '\u2014' : String(chosen.capo);
   led.classList.remove('flash'); void led.offsetWidth; led.classList.add('flash');
   foot.textContent = chosen.capo === 0
-    ? `play in ${chosen.name} \u00b7 no capo`
-    : `play in ${chosen.name}`;
+    ? `play in ${chosenName} \u00b7 no capo`
+    : `play in ${chosenName}`;
 
   const target = keyMeta(gState.targetValue).name;
   const list = shapes.map(s =>
-    `${s.name}\u2009\u2192\u2009${s.capo === 0 ? 'open' : 'capo ' + s.capo}`
+    `${familyLabel(s, minor)}\u2009\u2192\u2009${s.capo === 0 ? 'open' : 'capo ' + s.capo}`
   ).join('   ');
   alt.textContent = `to sound in ${target}:   ${list}`;
 
@@ -224,7 +293,8 @@ function renderGuitarSong() {
   const diagEl = document.getElementById('guitarDiagrams');
 
   const target = keyMeta(gState.targetValue);
-  const shapeMeta = keyMeta(SHAPE_FAMILIES.find(f => f.pc === gState.playInPc).name);
+  const family = SHAPE_FAMILIES.find(f => f.pc === gState.playInPc);
+  const shapeMeta = { name: familyLabel(family, target.minor) };
   const capo = capoForShape(gState.playInPc);
 
   if (!input.trim()) {
@@ -237,8 +307,8 @@ function renderGuitarSong() {
   }
 
   // Shape chords = song chords transposed down by the capo amount.
-  const shift = ((gState.playInPc - target.pc) % 12 + 12) % 12;
-  const shapeText = transposeText(input, shift, shapeMeta.flats);
+  const shift = ((gState.playInPc - targetPc()) % 12 + 12) % 12;
+  const shapeText = transposeToShapeKey(input, shift, family.name);
   outEl.textContent = shapeText;
 
   infoEl.innerHTML = capo === 0
@@ -255,7 +325,8 @@ function renderGuitarSong() {
   chords.forEach(token => {
     const parsed = parseChord(token);
     if (!parsed) return;
-    const shape = guitarShape(parsed.rootPc, parsed.quality);
+    const found = guitarShape(parsed.rootPc, parsed.quality, parsed.bassPc);
+    const shape = found ? found.shape : null;
 
     const block = document.createElement('div');
     block.className = 'chord-block guitar-block';
@@ -274,9 +345,15 @@ function renderGuitarSong() {
       wrap.className = 'fret-wrap';
       wrap.innerHTML = svgForShape(shape);
       block.appendChild(wrap);
-      block.addEventListener('click', () => openGuitarModal(token, shape));
+      if (found.bassMissing) {
+        const note = document.createElement('div');
+        note.className = 'chord-sub';
+        note.textContent = `Bass ${token.split('/')[1]} not shown`;
+        block.appendChild(note);
+      }
+      block.addEventListener('click', () => openGuitarModal(token, shape, found.bassMissing));
       block.addEventListener('keypress', e => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGuitarModal(token, shape); }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGuitarModal(token, shape, found.bassMissing); }
       });
     } else {
       const none = document.createElement('div');
@@ -293,11 +370,12 @@ function renderGuitarSong() {
    Guitar modal (reuses the shared modal shell)
 ------------------------------------------------------------ */
 
-function openGuitarModal(token, shape) {
+function openGuitarModal(token, shape, bassMissing) {
   document.getElementById('modalTitle').textContent = token;
   const sub = document.getElementById('modalSub');
   const fretText = shape.baseFret > 1 ? ` \u00b7 from fret ${shape.baseFret}` : '';
-  sub.textContent = 'Guitar \u00b7 standard tuning' + fretText;
+  const bassText = bassMissing ? ` \u00b7 bass ${token.split('/')[1]} not shown` : '';
+  sub.textContent = 'Guitar \u00b7 standard tuning' + fretText + bassText;
 
   const wrap = document.getElementById('modalPianoContainer');
   wrap.innerHTML = svgForShape(shape, { large: true });
