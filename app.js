@@ -181,7 +181,10 @@ const ANCHORED_CHORD_REGEX = new RegExp(
 );
 
 const CHORD_TOKEN_REGEX = new RegExp(
-  `\\b([A-G](?:#|b)?)(${QUALITY_ALT})(?:\\/([A-G](?:#|b)?))?\\b`,
+  // Trailing guard is a lookahead, not \b: there is no word boundary between
+  // "#" and a space, so \b made "C#" backtrack to match just "C" and leave
+  // the "#" behind (C# -> A## when transposed).
+  `(?<![A-Za-z0-9#])([A-G](?:#|b)?)(${QUALITY_ALT})(?:\\/([A-G](?:#|b)?))?(?![A-Za-z0-9#])`,
   'g'
 );
 
