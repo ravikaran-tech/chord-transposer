@@ -23,7 +23,13 @@ const SUFFIX_MAP = {
   'maj7': 'maj7', 'maj9': 'maj9', 'maj13': 'maj13',
   'add9': 'add9', 'add2': 'add9', 'add11': 'major',
   'm6': 'm6', 'm7': 'm7', 'min7': 'm7', 'm7b5': 'm7b5', '\u00f8': 'm7b5', '\u00f87': 'm7b5',
-  'm9': 'm9', 'm11': 'm11', 'mMaj7': 'mmaj7', 'mmaj7': 'mmaj7', 'madd9': 'add9'
+  'm9': 'm9', 'm11': 'm11', 'mMaj7': 'mmaj7', 'mmaj7': 'mmaj7', 'madd9': 'add9',
+  // Other spellings of the same chords (closest shape in the chord db).
+  '5': 'major', '2': 'add9', '4': 'sus4', 'add4': 'major', '7sus': '7sus4', '9sus4': '7sus4',
+  'M7': 'maj7', 'ma7': 'maj7', '\u0394': 'maj7', '\u03947': 'maj7', 'maj7#11': 'maj7',
+  '6/9': '69', '(add9)': 'add9', '7(b9)': '7b9', '7(#9)': '7#9', '7alt': 'alt',
+  'mi': 'minor', 'mi7': 'm7', '-7': 'm7', 'm(add9)': 'madd9', 'm(maj7)': 'mmaj7',
+  '\u00b0': 'dim', '\u00b07': 'dim7'
 };
 
 // Comfortable open-chord shape families (major), in CAGED order.
@@ -71,8 +77,7 @@ function spellInKey(pc, tonicName) {
 
 // Like transposeText (app.js), but spells results in the shape key.
 function transposeToShapeKey(input, shift, tonicName) {
-  CHORD_TOKEN_REGEX.lastIndex = 0;
-  return input.replace(CHORD_TOKEN_REGEX, (match, root, quality, bass) => {
+  return mapChordLines(input, (match, root, quality, bass) => {
     const newRoot = spellInKey(pcOf(root) + shift, tonicName);
     const newBass = bass ? '/' + spellInKey(pcOf(bass) + shift, tonicName) : '';
     return newRoot + quality + newBass;
@@ -82,6 +87,7 @@ function transposeToShapeKey(input, shift, tonicName) {
 const gState = {
   shapes: new Set([2, 7, 0]), // default D, G, C
   targetValue: 'B',
+  songKeyValue: 'auto', // key the pasted song is written in
   playInPc: null
 };
 
@@ -273,7 +279,7 @@ function updateCapo() {
     ? `play in ${chosenName} \u00b7 no capo`
     : `play in ${chosenName}`;
 
-  const target = keyMeta(gState.targetValue).name;
+  const target = keyDualLabel(gState.targetValue);
   const list = shapes.map(s =>
     `${familyLabel(s, minor)}\u2009\u2192\u2009${s.capo === 0 ? 'open' : 'capo ' + s.capo}`
   ).join('   ');
@@ -292,7 +298,11 @@ function renderGuitarSong() {
   const infoEl = document.getElementById('guitarInfo');
   const diagEl = document.getElementById('guitarDiagrams');
 
-  const target = keyMeta(gState.targetValue);
+  const songStyle = songAccidentalStyle(input);
+  const target = keyForSong(keyMeta(gState.targetValue), songStyle);
+  // Name shown for the band's key: the song's spelling, or both names
+  // (A#/Bb) when the song doesn't tell us.
+  const targetName = songStyle ? target.name : keyDualLabel(gState.targetValue);
   const family = SHAPE_FAMILIES.find(f => f.pc === gState.playInPc);
   const shapeMeta = { name: familyLabel(family, target.minor) };
   const capo = capoForShape(gState.playInPc);
@@ -301,19 +311,46 @@ function renderGuitarSong() {
     outEl.textContent = '';
     infoEl.innerHTML = capo === 0
       ? `Play open in <strong>${shapeMeta.name}</strong> \u2014 no capo needed.`
-      : `Capo <strong>${capo}</strong>, then finger <strong>${shapeMeta.name}</strong> shapes to sound in ${target.name}.`;
-    diagEl.innerHTML = '<p class="empty-hint">Paste the song (in the band\u2019s key) to see the shapes you finger.</p>';
+      : `Capo <strong>${capo}</strong>, then finger <strong>${shapeMeta.name}</strong> shapes to sound in ${targetName}.`;
+    diagEl.innerHTML = '<p class="empty-hint">Paste the song to see the shapes you finger.</p>';
     return;
   }
 
-  // Shape chords = song chords transposed down by the capo amount.
-  const shift = ((gState.playInPc - targetPc()) % 12 + 12) % 12;
-  const shapeText = transposeToShapeKey(input, shift, family.name);
+  // Step 1: the song's own key (picked, or auto-detected from chord lines).
+  // If it can't be found, treat the song as already in the band's key.
+  let songPc, songMinor, songLabel, songNote = '';
+  if (gState.songKeyValue === 'auto') {
+    const detected = detectKey(input);
+    if (detected) {
+      songPc = detected.pc; songMinor = detected.minor;
+      songLabel = detectedKeyName(input, detected);   // spelled as the song writes it
+      songNote = ' (auto-detected)';
+    } else {
+      songPc = target.pc; songMinor = target.minor;
+      songLabel = targetName;
+      songNote = ' (couldn\u2019t detect \u2014 treated as the band\u2019s key; pick it above)';
+    }
+  } else {
+    const sm = keyForSong(keyMeta(gState.songKeyValue), songStyle);
+    songPc = sm.pc; songMinor = sm.minor; songLabel = sm.name;
+  }
+  // Compare keys through their relative majors, so a song detected as Fm
+  // (relative minor of Ab/G#) still lines up with a band key of A#.
+  const songMajorPc = songMinor ? (songPc + 3) % 12 : songPc;
+  const toBand = ((targetPc() - songMajorPc) % 12 + 12) % 12;
+
+  // Step 2: band's key -> the shapes you finger (down by the capo amount).
+  const toShapes = ((gState.playInPc - targetPc()) % 12 + 12) % 12;
+  const shapeText = transposeToShapeKey(input, (toBand + toShapes) % 12, family.name);
   outEl.textContent = shapeText;
 
-  infoEl.innerHTML = capo === 0
-    ? `No capo \u00b7 finger these <strong>${shapeMeta.name}</strong> shapes (sounds in ${target.name}).`
-    : `Capo <strong>${capo}</strong> \u00b7 finger these <strong>${shapeMeta.name}</strong> shapes (sounds in ${target.name}).`;
+  const moveShort = toBand > 6 ? toBand - 12 : toBand;
+  const moveTxt = moveShort === 0 ? 'same key'
+    : (moveShort > 0 ? '+' : '\u2212') + Math.abs(moveShort);
+  const songLine = `Song <strong>${songLabel}</strong>${songNote} \u2192 band <strong>${targetName}</strong> (${moveTxt})<br>`;
+  infoEl.innerHTML = songLine + (capo === 0
+    ? `No capo \u00b7 finger these <strong>${shapeMeta.name}</strong> shapes (sounds in ${targetName}).`
+    : `Capo <strong>${capo}</strong> \u00b7 finger these <strong>${shapeMeta.name}</strong> shapes (sounds in ${targetName}).`);
 
   const chords = extractChords(shapeText);
   diagEl.innerHTML = '';
@@ -414,6 +451,14 @@ function initTabs() {
 function initGuitar() {
   const targetSel = document.getElementById('guitarTargetKey');
   const playInSel = document.getElementById('guitarPlayIn');
+  const songKeySel = document.getElementById('guitarSongKey');
+  if (songKeySel) {
+    gState.songKeyValue = songKeySel.value || 'auto';
+    songKeySel.addEventListener('change', () => {
+      gState.songKeyValue = songKeySel.value;
+      renderGuitarSong();
+    });
+  }
 
   gState.targetValue = targetSel.value;
 

@@ -429,6 +429,11 @@ textarea {
   transition: border-color 0.12s;
 }
 textarea:hover { border-color: var(--line-strong); }
+#inputText, #guitarInput {
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+}
 textarea::placeholder { color: var(--ink-faint); }
 
 /* ---------- Key + action rows ---------- */
@@ -495,6 +500,31 @@ textarea::placeholder { color: var(--ink-faint); }
 
 .btn.full { width: 100%; }
 
+/* ---------- Upload ---------- */
+.upload-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 10px;
+  flex-wrap: wrap;
+}
+.upload-row .btn-ghost { width: auto; flex: 0 0 auto; }
+.upload-row .btn-ghost:disabled { opacity: 0.6; cursor: progress; }
+.upload-hint { font-size: 12.5px; color: var(--ink-dim); }
+.upload-status {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+.upload-status.ok { border-color: var(--sage-line); background: var(--sage-soft); }
+.upload-status.error { border-color: var(--primary); }
+.upload-status[hidden] { display: none; }
+
 /* ---------- Detected info + output ---------- */
 .detected-info {
   font-family: var(--mono);
@@ -506,7 +536,9 @@ textarea::placeholder { color: var(--ink-faint); }
 .detected-info strong { color: var(--primary); font-weight: 600; }
 
 .output {
-  white-space: pre-wrap;
+  /* Never wrap song lines: wrapping drops end-of-line chords onto the wrong
+     line. Long lines scroll sideways instead (same font size). */
+  white-space: pre;
   font-family: var(--mono);
   font-size: 14px;
   line-height: 1.65;
@@ -746,9 +778,9 @@ textarea::placeholder { color: var(--ink-faint); }
 @media print {
   body { background: #fff; color: #000; }
   .hero, .topbar, .tabs, textarea, select, .action-row, .footer,
-  .panel-note, .play-btn { display: none !important; }
+  .panel-note, .play-btn, .upload-row, .upload-status { display: none !important; }
   .panel { box-shadow: none; }
-  .output { color: #000; border: 1px solid #ccc; }
+  .output { color: #000; border: 1px solid #ccc; white-space: pre-wrap; }
   .chord-name, .panel-title, .chord-sub { color: #000; }
 }
 

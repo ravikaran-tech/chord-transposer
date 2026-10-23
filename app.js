@@ -108,6 +108,57 @@ function keyNameFromPc(pc, minor) {
   return base ? base.name : spell(pc, false) + (minor ? 'm' : '');
 }
 
+/* ------------------------------------------------------------
+   Sharp/flat keys that have two names (A#/Bb, G#/Ab, D#/Eb, C#/Db,
+   F#/Gb). Dropdowns show both names; results are spelled to match the
+   song: a song written with sharps gets sharps, with flats gets flats.
+------------------------------------------------------------ */
+const TWO_NAME_PCS = [1, 3, 6, 8, 10];
+
+// Key name for sentences: "A#/Bb", "A#m/Bbm"; other keys as they are.
+function keyDualLabel(value) {
+  const meta = keyMeta(value);
+  if (!TWO_NAME_PCS.includes(meta.pc)) return meta.name;
+  const m = meta.minor ? 'm' : '';
+  return SHARP_NAMES[meta.pc] + m + '/' + FLAT_NAMES[meta.pc] + m;
+}
+
+// 'sharp' | 'flat' | null — which accidental the song's chords use most.
+function songAccidentalStyle(text) {
+  let sharps = 0, flats = 0;
+  (text || '').split('\n').forEach(line => {
+    const tokens = chordLineTokens(line);
+    if (!tokens) return;
+    tokens.forEach(tok => {
+      const m = tok.match(ANCHORED_CHORD_REGEX);
+      [m[1], m[3]].forEach(n => {
+        if (!n) return;
+        if (n.includes('#')) sharps++;
+        else if (n.length === 2 && n[1] === 'b') flats++;
+      });
+    });
+  });
+  if (sharps > flats) return 'sharp';
+  if (flats > sharps) return 'flat';
+  return null;
+}
+
+// Key metadata respelled to match the song, for two-name keys only.
+function keyForSong(meta, style) {
+  if (!style || !TWO_NAME_PCS.includes(meta.pc)) return meta;
+  const flats = style === 'flat';
+  const name = (flats ? FLAT_NAMES : SHARP_NAMES)[meta.pc] + (meta.minor ? 'm' : '');
+  return Object.assign({}, meta, { flats, name });
+}
+
+// Auto-detected key, named the way the song writes its first chord
+// (G#, not Ab, for a song written in sharps).
+function detectedKeyName(text, detected) {
+  const line = (text || '').split('\n').find(l => chordLineTokens(l));
+  const root = line ? (chordLineTokens(line)[0].match(/^[A-G][#b]?/) || [''])[0] : '';
+  return root ? root + (detected.minor ? 'm' : '') : keyNameFromPc(detected.pc, detected.minor);
+}
+
 /* ============================================================
    CHORD QUALITY / FORMULA TABLE
    Intervals are semitones from the root.
@@ -162,6 +213,32 @@ const CHORD_FORMULAS = {
   'madd9': { intervals: [0, 3, 7, 14],         minor: true, label: 'Minor Add9' },
 
   'dim':  { intervals: [0, 3, 6],     minor: true, label: 'Diminished' },
+
+  // Other common ways chord sheets write the same chords. Needed so a chord
+  // line using them is still recognised (and transposed) as a chord line.
+  '5':       { intervals: [0, 7],                 minor: false, label: 'Power chord (5)' },
+  '2':       { intervals: [0, 2, 4, 7],           minor: false, label: 'Add 2' },
+  '4':       { intervals: [0, 5, 7],              minor: false, label: 'Sus4' },
+  'add4':    { intervals: [0, 4, 5, 7],           minor: false, label: 'Add 4' },
+  '7sus':    { intervals: [0, 5, 7, 10],          minor: false, label: '7sus4' },
+  '9sus4':   { intervals: [0, 5, 7, 10, 14],      minor: false, label: '9sus4' },
+  'M7':      { intervals: [0, 4, 7, 11],          minor: false, label: 'Major 7' },
+  'ma7':     { intervals: [0, 4, 7, 11],          minor: false, label: 'Major 7' },
+  '\u0394':  { intervals: [0, 4, 7, 11],          minor: false, label: 'Major 7' },
+  '\u03947': { intervals: [0, 4, 7, 11],          minor: false, label: 'Major 7' },
+  'maj7#11': { intervals: [0, 4, 7, 11, 18],      minor: false, label: 'Major 7#11' },
+  '6/9':     { intervals: [0, 4, 7, 9, 14],       minor: false, label: 'Major 6/9' },
+  '(add9)':  { intervals: [0, 4, 7, 14],          minor: false, label: 'Add 9' },
+  '7(b9)':   { intervals: [0, 4, 7, 10, 13],      minor: false, label: '7b9' },
+  '7(#9)':   { intervals: [0, 4, 7, 10, 15],      minor: false, label: '7#9' },
+  '7alt':    { intervals: [0, 4, 10, 13, 15],     minor: false, label: 'Altered 7' },
+  'mi':      { intervals: [0, 3, 7],              minor: true,  label: 'Minor' },
+  'mi7':     { intervals: [0, 3, 7, 10],          minor: true,  label: 'Minor 7' },
+  '-7':      { intervals: [0, 3, 7, 10],          minor: true,  label: 'Minor 7' },
+  'm(add9)': { intervals: [0, 3, 7, 14],          minor: true,  label: 'Minor Add9' },
+  'm(maj7)': { intervals: [0, 3, 7, 11],          minor: true,  label: 'Minor-Major 7' },
+  '\u00b0':  { intervals: [0, 3, 6],              minor: true,  label: 'Diminished' },
+  '\u00b07': { intervals: [0, 3, 6, 9],           minor: true,  label: 'Diminished 7' },
   'dim7': { intervals: [0, 3, 6, 9],  minor: true, label: 'Diminished 7' },
   'o':    { intervals: [0, 3, 6],     minor: true, label: 'Diminished' },
   'o7':   { intervals: [0, 3, 6, 9],  minor: true, label: 'Diminished 7' },
@@ -203,29 +280,50 @@ function parseChord(token) {
    KEY DETECTION
 ============================================================ */
 
-function isChordOnlyLine(line) {
-  const trimmed = line.trim();
-  if (!trimmed || trimmed.startsWith('[')) return false;
+// Tokens allowed on a chord line that aren't chords: bar lines, dashes,
+// repeat marks (x2, (x2)), "N.C." (no chord), slashes, dots.
+const CHORD_LINE_DECOR = /^(?:\|+:?|:?\|+|-+|\/+|%|\.+|x\d+|\(x?\d+x?\)|\d+x|N\.?C\.?)$/i;
+
+// Returns the chord tokens of a chord line, or null if the line is a
+// lyric/text line. A chord line is made only of chords (plus the
+// decorations above, and an optional leading label like "Intro:").
+// Lyric lines are never changed, so a lyric word like "A" stays "A".
+function chordLineTokens(line) {
+  let trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith('[')) return null;
+  // Optional section label at the start: "Intro:", "Verse 1:", "Pre-Chorus:"
+  const label = trimmed.match(/^([A-Za-z][A-Za-z \-]*\d*)\s*:\s*/);
+  if (label && !label[1].split(/\s+/).every(w => ANCHORED_CHORD_REGEX.test(w))) {
+    trimmed = trimmed.slice(label[0].length);
+  }
   const tokens = trimmed.split(/[\s,]+/).filter(Boolean);
-  if (tokens.length === 0) return false;
-  return tokens.every(tok => ANCHORED_CHORD_REGEX.test(tok));
+  const chords = [];
+  for (const raw of tokens) {
+    if (CHORD_LINE_DECOR.test(raw)) continue;
+    // As written first (C(add9)), then without wrapping brackets ((C#) -> C#).
+    let tok = raw;
+    if (!ANCHORED_CHORD_REGEX.test(tok)) tok = raw.replace(/^\(+/, '').replace(/\)+$/, '');
+    if (!ANCHORED_CHORD_REGEX.test(tok)) return null;
+    chords.push(tok);
+  }
+  return chords.length ? chords : null;
+}
+
+function isChordOnlyLine(line) {
+  return chordLineTokens(line) !== null;
 }
 
 // Returns { pc, minor } for the detected key, or null.
 function detectKey(text) {
   const lines = text.split('\n');
   for (const line of lines) {
-    if (!isChordOnlyLine(line)) continue;
-    const firstToken = line.trim().split(/[\s,]+/)[0];
-    const parsed = parseChord(firstToken);
+    const tokens = chordLineTokens(line);
+    if (!tokens) continue;
+    const parsed = parseChord(tokens[0]);
     if (parsed) return { pc: parsed.rootPc, minor: parsed.formula.minor };
   }
-  CHORD_TOKEN_REGEX.lastIndex = 0;
-  const anyMatch = CHORD_TOKEN_REGEX.exec(text);
-  if (anyMatch) {
-    const parsed = parseChord(anyMatch[0]);
-    if (parsed) return { pc: parsed.rootPc, minor: parsed.formula.minor };
-  }
+  // No fallback to "first chord-looking word anywhere": that picked lyric
+  // words like "A" as the key.
   return null;
 }
 
@@ -233,8 +331,18 @@ function detectKey(text) {
    TRANSPOSITION
 ============================================================ */
 
+// Apply a chord-renaming function to chord lines only; lyric lines are
+// returned unchanged. Shared by the piano and guitar transposers.
+function mapChordLines(input, renameChord) {
+  return input.split('\n').map(line => {
+    if (!isChordOnlyLine(line)) return line;
+    CHORD_TOKEN_REGEX.lastIndex = 0;
+    return line.replace(CHORD_TOKEN_REGEX, renameChord);
+  }).join('\n');
+}
+
 function transposeText(input, shift, useFlats) {
-  return input.replace(CHORD_TOKEN_REGEX, (match, root, quality, bass) => {
+  return mapChordLines(input, (match, root, quality, bass) => {
     const newRoot = spell(pcOf(root) + shift, useFlats);
     const newBass = bass ? '/' + spell(pcOf(bass) + shift, useFlats) : '';
     return newRoot + quality + newBass;
@@ -246,11 +354,8 @@ function extractChords(text) {
   const chords = [];
   const seen = new Set();
   lines.forEach(line => {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('[')) return;
-    const tokens = trimmed.split(/[\s,]+/).filter(Boolean);
-    if (tokens.length === 0) return;
-    if (!tokens.every(tok => ANCHORED_CHORD_REGEX.test(tok))) return;
+    const tokens = chordLineTokens(line);
+    if (!tokens) return;
     tokens.forEach(tok => {
       if (!seen.has(tok)) { seen.add(tok); chords.push(tok); }
     });
@@ -338,14 +443,15 @@ function runTranspose() {
     return;
   }
 
-  const to = keyMeta(state.toValue);
+  const style = songAccidentalStyle(input);
+  const to = keyForSong(keyMeta(state.toValue), style);
 
   let fromPc, fromLabel, autoNote = '';
   if (state.fromValue === 'auto') {
     const detected = detectKey(input);
     if (detected) {
       fromPc = detected.pc;
-      fromLabel = keyNameFromPc(detected.pc, detected.minor);
+      fromLabel = detectedKeyName(input, detected);
       autoNote = ' (auto-detected)';
     } else {
       fromPc = 0;
@@ -353,7 +459,7 @@ function runTranspose() {
       autoNote = ' (couldn\u2019t detect \u2014 assumed C)';
     }
   } else {
-    const from = keyMeta(state.fromValue);
+    const from = keyForSong(keyMeta(state.fromValue), style);
     fromPc = from.pc;
     fromLabel = from.name;
   }
@@ -377,9 +483,15 @@ function runTranspose() {
 function stepSemitone(delta) {
   const to = keyMeta(state.toValue);
   const newPc = ((to.pc + delta) % 12 + 12) % 12;
-  const newName = keyNameFromPc(newPc, to.minor);
+  // Use whichever name the dropdown actually has (C#, not Db), so the
+  // box never goes blank after -1/+1.
+  const sel = document.getElementById('toKey');
+  const suffix = to.minor ? 'm' : '';
+  const candidates = [keyNameFromPc(newPc, to.minor), SHARP_NAMES[newPc] + suffix, FLAT_NAMES[newPc] + suffix];
+  const values = Array.from(sel.options || []).map(o => o.value);
+  const newName = candidates.find(c => values.includes(c)) || candidates[0];
   state.toValue = newName;
-  document.getElementById('toKey').value = newName;
+  sel.value = newName;
   runTranspose();
 }
 

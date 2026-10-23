@@ -139,9 +139,16 @@
       <section class="panel">
         <p class="kicker">Song &amp; chord transposer</p>
         <h2 class="panel-title">Transpose a song</h2>
-        <p class="panel-note">Paste a whole song with lyrics, or just a chord list like <code>C, F, G</code>.</p>
+        <p class="panel-note">Paste a whole song with lyrics, or just a chord list like <code>C, F, G</code>. Or upload a photo or file of the song.</p>
 
-        <textarea id="inputText" spellcheck="false" placeholder="C  F  G  Am
+        <div class="upload-row">
+          <button type="button" id="pianoUploadBtn" class="btn btn-ghost small">Upload song</button>
+          <span class="upload-hint">Photo, screenshot, PDF, Word or text</span>
+          <input type="file" id="pianoUploadInput" accept="image/*,.pdf,.docx,.doc,.rtf,.txt,.text,.md,.cho,.chopro,.chordpro,.crd,.pro,.chord,.csv,.html,.htm,text/*" hidden>
+        </div>
+        <p id="pianoUploadStatus" class="upload-status" hidden aria-live="polite"></p>
+
+        <textarea id="inputText" spellcheck="false" wrap="off" placeholder="C  F  G  Am
 Paste your song or chord list here..."></textarea>
 
         <div class="key-row">
@@ -216,10 +223,24 @@ Paste your song or chord list here..."></textarea>
       <section class="panel">
         <p class="kicker sage">Shapes with the capo</p>
         <h2 class="panel-title">Your chords, fingered</h2>
-        <p class="panel-note">Paste the song in the band's key. It shows the shapes you actually finger.</p>
+        <p class="panel-note">Paste the song in whatever key it's written in. Set the song's key (or leave Auto-detect) and the app moves it to the band's key, then into the shapes you finger.</p>
 
-        <textarea id="guitarInput" spellcheck="false" placeholder="B  E  F#m  A
-Paste the song (in the band's key)..."></textarea>
+        <div class="key-row">
+          <label class="knob knob-wide">
+            <span class="knob-cap">Song's key (as written)</span>
+            <select id="guitarSongKey" data-keys="auto-major-minor"></select>
+          </label>
+        </div>
+
+        <div class="upload-row">
+          <button type="button" id="guitarUploadBtn" class="btn btn-ghost small">Upload song</button>
+          <span class="upload-hint">Photo, screenshot, PDF, Word or text</span>
+          <input type="file" id="guitarUploadInput" accept="image/*,.pdf,.docx,.doc,.rtf,.txt,.text,.md,.cho,.chopro,.chordpro,.crd,.pro,.chord,.csv,.html,.htm,text/*" hidden>
+        </div>
+        <p id="guitarUploadStatus" class="upload-status" hidden aria-live="polite"></p>
+
+        <textarea id="guitarInput" spellcheck="false" wrap="off" placeholder="G#  C#  D#  Fm
+Paste the song, chords on their own line above the lyrics..."></textarea>
 
         <div class="key-row">
           <label class="knob knob-wide">
@@ -256,14 +277,17 @@ Paste the song (in the band's key)..."></textarea>
     (function () {
       var MAJOR = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
       var MINOR = ['Cm','C#m','Dm','Ebm','Em','Fm','F#m','Gm','G#m','Am','Bbm','Bm'];
+      // Keys with two names show both; results follow the song's own spelling.
+      var DUAL = { 'C#': 'C#/Db', 'Eb': 'D#/Eb', 'F#': 'F#/Gb', 'Ab': 'G#/Ab', 'Bb': 'A#/Bb',
+                   'C#m': 'C#/Db', 'Ebm': 'D#/Eb', 'F#m': 'F#/Gb', 'G#m': 'G#/Ab', 'Bbm': 'A#/Bb' };
       function opt(v, label, selected) {
         return '<option value="' + v + '"' + (selected ? ' selected' : '') + '>' + (label || v) + '</option>';
       }
       function majorGroup(sel) {
-        return '<optgroup label="Major">' + MAJOR.map(function (k) { return opt(k, k, k === sel); }).join('') + '</optgroup>';
+        return '<optgroup label="Major">' + MAJOR.map(function (k) { return opt(k, DUAL[k] || k, k === sel); }).join('') + '</optgroup>';
       }
       function minorGroup(sel) {
-        return '<optgroup label="Minor">' + MINOR.map(function (k) { return opt(k, k.replace('m',' min'), k === sel); }).join('') + '</optgroup>';
+        return '<optgroup label="Minor">' + MINOR.map(function (k) { return opt(k, (DUAL[k] || k.replace(/m$/, '')) + ' min', k === sel); }).join('') + '</optgroup>';
       }
       document.querySelectorAll('select[data-keys]').forEach(function (el) {
         var kind = el.getAttribute('data-keys');
@@ -302,6 +326,7 @@ Paste the song (in the band's key)..."></textarea>
   <script src="guitar.js"></script>
   <script src="live-lookup.js"></script>
   <script src="ui-enhance.js"></script>
+  <script src="upload.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {

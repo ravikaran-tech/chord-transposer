@@ -1,5 +1,5 @@
 // Bump CACHE_VERSION whenever you deploy changes so clients pick them up.
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const CACHE_NAME = `chord-transposer-${CACHE_VERSION}`;
 
 const PRECACHE = [
@@ -9,6 +9,9 @@ const PRECACHE = [
   './app.js',
   './guitar.js',
   './guitar-chords.js',
+  './live-lookup.js',
+  './ui-enhance.js',
+  './upload.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png'

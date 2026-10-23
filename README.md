@@ -18,18 +18,34 @@ Installable as a PWA (Progressive Web App): works offline, no App Store needed.
   (−5 to +6) marks where the value sits, and a line below shows the octave-
   equivalent alternative (`+3` is the same as `−9`).
 - **Song & Chord Transposer** — paste a whole song (chords + lyrics) or a bare
-  chord list like `C, F, G`. Auto-detects the original key, or set it manually.
+  chord list like `C, F, G`, or **upload** it (see [Upload a song](#-upload-a-song-piano--guitar)).
+  Auto-detects the original key, or set it manually.
   Semitone nudge buttons (`−1` / `+1`), Copy, and Export as PDF.
-- **Correct sharps/flats** — transposing to F gives you `Bb`, not `A#`; to C#
-  gives you sharps, not flats. Spelling follows the target key's convention,
-  not a single fixed sharps table.
+- **Lyrics are never changed** — only lines made entirely of chords are
+  transposed (chords on their own line above the lyrics). A lyric word like
+  "A" in "A great High Priest" or "Am" in "Am I wrong" stays as written.
+  Chord lines may also have a label (`Intro:`, `Verse 1:`), bar lines `|`,
+  dashes, repeat marks (`x2`, `(x2)`) and `N.C.`.
+- **Long lines never wrap** — song lines keep their exact shape at the same
+  text size, so every chord stays over its word; swipe sideways for long
+  lines. (Export PDF still wraps very long lines so nothing is cut off on
+  paper.)
+- **Correct sharps/flats** — transposing to F gives you `Bb`, not `A#`; to D
+  gives you `F#`, not `Gb`. Keys with two names are listed with both —
+  **C#/Db, D#/Eb, F#/Gb, G#/Ab, A#/Bb** — and the result follows **your
+  song's spelling**: a song written with sharps gets sharps (`G# C# D#` →
+  `A# D# F`), a song written with flats gets flats (`Ab Db Eb` → `Bb Eb F`).
+  A song with no sharps or flats uses the key's usual spelling.
 - **Chord Reference** — every unique chord in the transposed result, shown as
   a small piano diagram. Tap any chord to enlarge it and **hear it played**
   (Web Audio, no sound files needed).
 - **Full chord vocabulary** — major, minor, diminished (`dim`, `dim7`),
   augmented, sus2/sus4, 6/7/9/11/13, `maj7`, `m7`, `m7b5` (half-diminished),
   `mMaj7`, `add9`, altered dominants (`7b9`, `7#9`, `9#11`, `7#5`, etc.), and
-  slash chords (`C/G`).
+  slash chords (`C/G`). Common other ways of writing them are understood too:
+  `C5`, `C2`, `C4`, `Cadd4`, `C7sus`, `C9sus4`, `CM7`, `Cma7`, `CΔ7`,
+  `Cmaj7#11`, `C6/9`, `C(add9)`, `C7(b9)`, `C7(#9)`, `C7alt`, `Cmi`, `Cmi7`,
+  `C-7`, `Cm(add9)`, `Cm(maj7)`, `C°`, `C°7`.
 
 ### 🎸 Guitar tab
 
@@ -44,9 +60,14 @@ Installable as a PWA (Progressive Web App): works offline, no App Store needed.
   relative major's shapes and labels them by their minor name (C shapes show
   as **Am**, G as **Em**, D as **Bm**, A as **F#m**, E as **C#m**). An Am song
   with C/G/D shapes → **Am shapes, no capo**.
-- **Shape-aware song transposer** — paste the song in the band's real key,
-  and it converts every chord into the shapes you actually finger on the
-  fretboard (accounting for the capo), not just a plain transposition.
+- **Song's key box** — paste (or upload) the song in whatever key it's
+  written in, and set **Song's key** (or leave **Auto-detect**). The app
+  moves it to the band's key, then into your shapes. Example: chart in
+  **G#**, band plays in **A#** → with G shapes: **capo 3**, finger
+  `G C D` / `Em C G`.
+- **Shape-aware song transposer** — converts every chord into the shapes
+  you actually finger on the fretboard (accounting for the capo), not just
+  a plain transposition.
   Chords are spelled to fit the shape key, so G shapes give `Bb` and `Eb`,
   never `A#` or `D#`.
 - **Slash chords** — major and minor slash chords (`D/F#`, `Am/G`, `C/E`…)
@@ -59,6 +80,25 @@ Installable as a PWA (Progressive Web App): works offline, no App Store needed.
 - Fingering data derived from the open-source
   [`@tombatossals/chords-db`](https://github.com/tombatossals/chords-db)
   (MIT-licensed), bundled locally so diagrams work fully offline.
+
+### 📄 Upload a song (Piano + Guitar)
+
+Tap **Upload song** above the song box on either tab.
+
+- **Accepts:** photos and screenshots (PNG, JPG…), PDF, Word (`.docx`),
+  and text files (`.txt`, `.md`, ChordPro `.cho`/`.chordpro`/`.pro`,
+  `.crd`, `.rtf`, `.html`, `.csv`).
+- **Text, Word and text PDFs** are read exactly, keeping each chord over its
+  word.
+- **Photos, screenshots and scanned PDFs** are read with free text
+  recognition that runs in your browser (no account, no cost; your file is
+  not sent anywhere). It needs internet the first time (about 10 MB).
+- **Misread sharps are repaired** — some fonts' `#` gets read as "it", "F"
+  or "d" (`Cit`, `AiFm`). On lines made only of chords, the app turns those
+  back into sharps (`C#`, `A#m`) and tells you how many it fixed.
+- The text lands in the song box so you can **check and correct it**, then
+  pick your key and transpose.
+- Not supported: old Word `.doc` (save as `.docx` or PDF), `.odt`, `.pages`.
 
 ### 🎤 Live Chord Lookup (Piano + Guitar)
 
@@ -138,7 +178,9 @@ does the rest of the transposing for you.
 
 - It does not auto-compose music
 - It does not guess chords by ear (no audio input / pitch detection)
-- It does not require internet once installed (service worker caches the app)
+- It does not require internet once installed (service worker caches the
+  app) — except the first time you upload a photo, PDF or Word file, which
+  downloads the free reader
 
 ---
 
@@ -196,12 +238,25 @@ does the rest of the transposing for you.
 - `live-lookup.js` — Live Chord Lookup widget: single-chord Band Key ↔ Your
   Key translator shared by both tabs. Reads note/chord helpers from `app.js`
   and shape/capo helpers from `guitar.js` read-only; does not modify either.
+- `upload.js` — Upload a song: reads photos/scanned PDFs with
+  [tesseract.js](https://github.com/naptha/tesseract.js), text PDFs with
+  [pdf.js](https://mozilla.github.io/pdf.js/), Word with
+  [mammoth.js](https://github.com/mwilliamson/mammoth.js) (all loaded from
+  the jsDelivr CDN on first use), rebuilds the chord-over-lyric layout from
+  word positions and repairs misread sharps on chord lines.
 - `service-worker.js` — offline caching (network-first for the app shell, so
   new deploys are picked up automatically; cache-first for everything else).
 - `manifest.json` — installable as a home-screen app on mobile.
 
 ## Known limitations
 
+- Songs need chords on their own line above the lyrics. Chords written
+  inside the lyrics (like `[A]mazing grace`) are not transposed.
+- Reading photos can still make mistakes beyond `#` (e.g. a blurry chord or
+  word). Always check the song box after uploading.
+- Live Chord Lookup shows the dropdown's usual name for two-name keys
+  (e.g. `Bb`), since there's no song to match.
+- Export PDF wraps very long lines so nothing is cut off on paper.
 - "Shapes I can play" offers the five major families (C/A/G/E/D). Minor
   keys are handled through their relative majors, but there are no
   separate Am/Em/Dm chips to pick yet.
@@ -211,7 +266,8 @@ does the rest of the transposing for you.
   common with your other shapes, the tool still shows its best computed
   answer — it doesn't yet warn "this chord doesn't fit."
 - A few chord types draw a close-but-not-exact guitar diagram: `madd9`,
-  `m13`, `7sus2`, `add11`, `13b9`, `7#11`.
+  `m(add9)`, `m13`, `7sus2`, `add11`, `add4`, `13b9`, `7#11`, `maj7#11`,
+  `9sus4`, and power chords (`C5`, drawn as a full major chord).
 - Guitar diagrams show the first voicing only.
 - Standard tuning (EADGBE) only.
 
@@ -221,7 +277,6 @@ does the rest of the transposing for you.
 - Other guitar tunings (drop D, DADGAD, etc.)
 - Minor shape chips (Am/Em/Dm) for the capo finder
 - Capo pick scored by how many chords are open/no-barre
-- Auto-detect the band's key on the Guitar tab
 - Remember "Shapes I can play" between visits
 - Nashville number / Roman numeral display
 - Auto-save the last song
