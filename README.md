@@ -12,9 +12,10 @@ Installable as a PWA (Progressive Web App): works offline, no App Store needed.
 
 ### 🎹 Piano tab
 
-- **Quick Key Transpose** — pick "my key" and the band's key, and a big amber
-  LED readout shows the transpose amount instantly (e.g. `C# → E` reads `+3`),
-  the same way a keyboard's transpose knob works. It also shows the octave-
+- **Quick Key Transpose** — pick "my key" and the band's key, and a round
+  **Transpose** dial shows the amount instantly (e.g. `C# → E` reads `+3`),
+  the same way a keyboard's transpose knob works. A scale track underneath
+  (−5 to +6) marks where the value sits, and a line below shows the octave-
   equivalent alternative (`+3` is the same as `−9`).
 - **Song & Chord Transposer** — paste a whole song (chords + lyrics) or a bare
   chord list like `C, F, G`. Auto-detects the original key, or set it manually.

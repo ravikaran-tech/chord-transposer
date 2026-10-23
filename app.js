@@ -293,7 +293,7 @@ const state = {
 };
 
 /* ============================================================
-   QUICK KEY TRANSPOSE  (hero LED readout)
+   QUICK KEY TRANSPOSE  (hero dial + scale track)
 ============================================================ */
 
 function quickTranspose() {
