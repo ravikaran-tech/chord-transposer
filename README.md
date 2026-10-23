@@ -40,9 +40,18 @@ Installable as a PWA (Progressive Web App): works offline, no App Store needed.
   - Example: you play in **D, G, C**. The band's song is in **B**. The app
     tells you: capo **4**, play **G shapes** — and shows the other options
     too (D shapes → capo 9, C shapes → capo 11) so you can see why G wins.
+- **Minor keys** — if the band's key is minor, the capo finder uses the
+  relative major's shapes and labels them by their minor name (C shapes show
+  as **Am**, G as **Em**, D as **Bm**, A as **F#m**, E as **C#m**). An Am song
+  with C/G/D shapes → **Am shapes, no capo**.
 - **Shape-aware song transposer** — paste the song in the band's real key,
   and it converts every chord into the shapes you actually finger on the
   fretboard (accounting for the capo), not just a plain transposition.
+  Chords are spelled to fit the shape key, so G shapes give `Bb` and `Eb`,
+  never `A#` or `D#`.
+- **Slash chords** — major and minor slash chords (`D/F#`, `Am/G`, `C/E`…)
+  get a real slash-chord fingering with the bass note. For other slash
+  chords, the plain chord is drawn with a "Bass X not shown" note.
 - **Fretboard diagrams** — every chord gets a real fingering diagram (open
   strings, muted strings, fret dots, barres, and a fret-number label for
   shapes played up the neck). Tap to enlarge with finger numbers.
@@ -57,8 +66,14 @@ A small always-visible card above both tabs for the moment mid-song when
 someone calls out a chord live — including an accidental that isn't in the
 song's key, so the full transposer's key detection shouldn't be involved.
 
-- Set **Band Key** and **Your Key** once (Your Key defaults to `C#`, but is
-  fully editable). Both are remembered between visits.
+- **Type names (optional)** — enter who's in the band and who you are
+  (e.g. **Hillary** and **Allen**). The whole card then uses the names:
+  "Hillary's key" / "Allen's key", "Hillary called it (band) → Allen plays",
+  results like `F# in D (Hillary) → F in C# (Allen)`, and guitar hints like
+  "Allen, play: capo 3, D shape". Leave them blank for the plain wording.
+  Names are saved with the keys; a **Clear names** link removes them.
+- Set **Band Key** and **Your Key** once (Band Key defaults to `D`, Your Key
+  to `C#`; both fully editable). Both are remembered between visits.
 - Flip the direction depending on who's talking:
   - **Band called it → I play** — they shout a chord in their key, you get
     what to play in yours.
@@ -67,9 +82,9 @@ song's key, so the full transposer's key detection shouldn't be involved.
 - Pick the root and quality from dropdowns (no typing, fast to use on stage)
   and the answer appears instantly.
 - On the Guitar tab, **Band → I play** also suggests a capo + shape using
-  whichever open shapes you already selected in "Shapes I can play" — with
-  a note that this is approximate for minor chords, since shape families
-  are open/major voicings (see [Known limitations](#known-limitations)).
+  whichever open shapes you already selected in "Shapes I can play". For
+  minor chords it prefers a shape with an open minor form (A, E or D →
+  "open Am / Em / Dm shape").
 - Independent of the full song transposer and its key-detection logic —
   a live accidental is never mistaken for the song's tonic.
 
@@ -187,19 +202,27 @@ does the rest of the transposing for you.
 
 ## Known limitations
 
-- Guitar shape families (C/A/G/E/D) are open **major** voicings only — there
-  are no dedicated minor-shape families yet, so capo/shape suggestions for
-  minor chords (on the capo finder and in Live Chord Lookup) are approximate.
+- "Shapes I can play" offers the five major families (C/A/G/E/D). Minor
+  keys are handled through their relative majors, but there are no
+  separate Am/Em/Dm chips to pick yet.
+- The capo pick is the lowest capo among your shapes — it doesn't yet look
+  at which chords are in the song, so it can suggest a high capo (9–10).
 - If a song (or a live-called accidental) has no good capo position in
   common with your other shapes, the tool still shows its best computed
   answer — it doesn't yet warn "this chord doesn't fit."
+- A few chord types draw a close-but-not-exact guitar diagram: `madd9`,
+  `m13`, `7sus2`, `add11`, `13b9`, `7#11`.
+- Guitar diagrams show the first voicing only.
 - Standard tuning (EADGBE) only.
 
 ## Roadmap / ideas
 
 - Alternate voicings ("next shape" toggle) for both piano and guitar
 - Other guitar tunings (drop D, DADGAD, etc.)
-- Minor-key shape families for the capo finder
+- Minor shape chips (Am/Em/Dm) for the capo finder
+- Capo pick scored by how many chords are open/no-barre
+- Auto-detect the band's key on the Guitar tab
+- Remember "Shapes I can play" between visits
 - Nashville number / Roman numeral display
 - Auto-save the last song
 - In-app warning when a chord has no good shared capo position
