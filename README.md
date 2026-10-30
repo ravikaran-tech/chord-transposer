@@ -306,5 +306,7 @@ similar. No server or backend required.
 - **Song Transposer "To" key follows the Band key** by default. Change "To" by hand
   (dropdown or −1/+1) and it becomes that song's own key; a **Match band key** link
   re-links it. The choice is saved.
+- **Clear** (next to Upload song, on Piano Song and Guitar Shapes) empties the pasted
+  song, the converted result and the chord diagrams. **Undo** brings it back for 8 seconds.
 - The phone **Back** button closes the More sheet, or goes to the previous screen.
 - Opens in **dark mode** the first time; Light/Dark is in Settings and remembered.

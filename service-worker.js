@@ -1,6 +1,6 @@
 // Bump CACHE_VERSION whenever you deploy changes so clients pick them up.
 // Keep it equal to the ?v= number on every css/js link in index.html.
-const CACHE_VERSION = 'v11';
+const CACHE_VERSION = 'v12';
 const ASSET_V = CACHE_VERSION.slice(1);
 const CACHE_NAME = `chord-transposer-${CACHE_VERSION}`;
 
@@ -15,6 +15,7 @@ const PRECACHE = [
   `./ui-enhance.js?v=${ASSET_V}`,
   `./upload.js?v=${ASSET_V}`,
   `./menu.js?v=${ASSET_V}`,
+  `./song-clear.js?v=${ASSET_V}`,
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png'

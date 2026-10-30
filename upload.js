@@ -363,6 +363,7 @@ function initUploadFor(cfg) {
         return;
       }
       box.value = r.text;
+      box.dispatchEvent(new Event('input')); // lets Clear (song-clear.js) enable
       let msg = `Read from ${r.source}. `;
       if (r.repaired.length) {
         const eg = r.repaired.slice(0, 3).map(x => `${escapeHtmlUpload(x.from)} → ${escapeHtmlUpload(x.to)}`).join(', ');
