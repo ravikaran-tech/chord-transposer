@@ -109,6 +109,12 @@ function shapeKeyLabel(shapePc, minor) {
   return minor ? spellInKey((shapePc + 9) % 12, tonic) + 'm' : tonic;
 }
 
+// Reset: suggestion back to the recommended (lowest) capo; caller sets My capo to 0.
+function guitarResetSuggestion() {
+  syncPlayIn(true);
+  updateCapo();
+}
+
 function guitarSetMyCapo(n) {
   const v = parseInt(n, 10);
   gState.myCapo = v >= 0 && v <= 11 ? v : 0;
@@ -127,12 +133,27 @@ function updateFinderUse() {
   const hint = document.getElementById('guitarSuggest');
   const same = chosen.capo === gState.myCapo;
   const capoTxt = chosen.capo === 0 ? 'no capo' : 'capo ' + chosen.capo;
+  // Never locked: when the suggestion is in use, the button resets instead.
+  const nothingToReset = same && gState.myCapo === 0;
   if (btn) {
-    btn.dataset.useCapo = String(chosen.capo);
-    btn.textContent = same ? `\u2713 Using ${capoTxt}` : `Use ${capoTxt} (${name} shapes)`;
-    btn.disabled = same;
+    if (same) {
+      btn.removeAttribute('data-use-capo');
+      btn.dataset.resetCapo = '1';
+      btn.textContent = nothingToReset ? '\u2713 No capo needed' : 'Reset capo';
+      btn.className = nothingToReset ? 'btn btn-primary full' : 'btn btn-ghost full';
+    } else {
+      delete btn.dataset.resetCapo;
+      btn.dataset.useCapo = String(chosen.capo);
+      btn.textContent = `Use ${capoTxt} (${name} shapes)`;
+      btn.className = 'btn btn-primary full';
+    }
+    btn.disabled = nothingToReset;
   }
-  if (note) note.textContent = same ? 'This is your capo on every screen now.' : `Your capo now: ${gState.myCapo === 0 ? 'none' : gState.myCapo}.`;
+  if (note) {
+    note.textContent = same
+      ? (nothingToReset ? 'No capo on every screen.' : `\u2713 Using capo ${gState.myCapo} on every screen. Reset or change it any time, or use My capo at the top.`)
+      : `Your capo now: ${gState.myCapo === 0 ? 'none' : gState.myCapo}.`;
+  }
   if (hint) {
     hint.innerHTML = same ? '' :
       `Capo Finder suggests <strong>${capoTxt}</strong> (${name} shapes). ` +

@@ -996,3 +996,4 @@ textarea, input[type="text"], select { font-size: 16px; }
   .bottom-nav, body::before { display: none !important; }
   .stage { padding-bottom: 24px; }
 }
+.btn-danger { border-color: #c0564b !important; color: #e07a70 !important; }

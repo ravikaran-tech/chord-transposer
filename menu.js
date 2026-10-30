@@ -296,6 +296,12 @@ function menuInitSetup() {
   }
   // "Use capo N" (Capo Finder button and the hint on Shapes with Capo).
   document.addEventListener('click', e => {
+    const reset = e.target.closest('[data-reset-capo]');
+    if (reset && !reset.disabled) {
+      if (typeof guitarResetSuggestion === 'function') guitarResetSuggestion();
+      menuSetCapo('0');
+      return;
+    }
     const use = e.target.closest('[data-use-capo]');
     if (!use || use.disabled) return;
     menuSetCapo(use.dataset.useCapo);
@@ -338,7 +344,22 @@ function initMenu() {
   });
 
   const reset = document.getElementById('resetSavedBtn');
+  // Two taps: the first asks, the second clears (no browser pop-up).
   if (reset) reset.addEventListener('click', () => {
+    const note = document.getElementById('resetSavedNote');
+    if (reset.dataset.armed !== '1') {
+      reset.dataset.armed = '1';
+      reset.textContent = 'Tap again to clear names, keys and capo';
+      reset.classList.add('btn-danger');
+      if (note) note.textContent = 'Your theme choice is kept.';
+      setTimeout(() => {
+        reset.dataset.armed = '';
+        reset.textContent = 'Clear saved data';
+        reset.classList.remove('btn-danger');
+        if (note) note.textContent = '';
+      }, 5000);
+      return;
+    }
     ['liveLookup.v1', MENU_SETUP_KEY, MENU_SCREEN_KEY].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
     location.reload();
   });

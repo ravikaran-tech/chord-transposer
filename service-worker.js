@@ -1,18 +1,20 @@
 // Bump CACHE_VERSION whenever you deploy changes so clients pick them up.
-const CACHE_VERSION = 'v10';
+// Keep it equal to the ?v= number on every css/js link in index.html.
+const CACHE_VERSION = 'v11';
+const ASSET_V = CACHE_VERSION.slice(1);
 const CACHE_NAME = `chord-transposer-${CACHE_VERSION}`;
 
 const PRECACHE = [
   './',
   './index.html',
-  './style.css',
-  './app.js',
-  './guitar.js',
-  './guitar-chords.js',
-  './live-lookup.js',
-  './ui-enhance.js',
-  './upload.js',
-  './menu.js',
+  `./style.css?v=${ASSET_V}`,
+  `./app.js?v=${ASSET_V}`,
+  `./guitar.js?v=${ASSET_V}`,
+  `./guitar-chords.js?v=${ASSET_V}`,
+  `./live-lookup.js?v=${ASSET_V}`,
+  `./ui-enhance.js?v=${ASSET_V}`,
+  `./upload.js?v=${ASSET_V}`,
+  `./menu.js?v=${ASSET_V}`,
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png'
@@ -48,7 +50,8 @@ self.addEventListener('fetch', event => {
 
   if (isAppShell) {
     event.respondWith(
-      fetch(req)
+      // no-cache: always re-check with the server, never a stale HTTP copy
+      fetch(req, { cache: 'no-cache' })
         .then(res => {
           const copy = res.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(req, copy)).catch(() => {});
