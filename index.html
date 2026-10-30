@@ -18,7 +18,7 @@
     (function () {
       var saved = null;
       try { saved = localStorage.getItem('theme'); } catch (e) {}
-      var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      var theme = (saved === 'light' || saved === 'dark') ? saved : 'dark'; // dark on first visit; the user's own choice is remembered
       document.documentElement.setAttribute('data-theme', theme);
     })();
   </script>
