@@ -303,5 +303,8 @@ similar. No server or backend required.
 - **My capo is the one capo value.** Live Chord Lookup and Shapes with Capo use it.
   The Capo Finder only *suggests* a capo; tap **Use capo N** to apply it.
   A new suggestion never changes your capo by itself.
+- **Song Transposer "To" key follows the Band key** by default. Change "To" by hand
+  (dropdown or −1/+1) and it becomes that song's own key; a **Match band key** link
+  re-links it. The choice is saved.
 - The phone **Back** button closes the More sheet, or goes to the previous screen.
 - Opens in **dark mode** the first time; Light/Dark is in Settings and remembered.

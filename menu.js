@@ -43,7 +43,9 @@ const MENU_ICONS = {
   more:   '<path d="M4 7h16M4 12h16M4 17h16"/>'
 };
 
-const menuState = { screen: 'live', lastByInst: { piano: 'quick', guitar: 'finder' }, lastFocus: null };
+const menuState = { screen: 'live', lastByInst: { piano: 'quick', guitar: 'finder' }, lastFocus: null,
+  toLinked: true,     // Song Transposer "To" follows the Band key until changed by hand
+  settingTo: false };
 
 function menuIcon(id) {
   return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" ' +
@@ -193,7 +195,39 @@ function menuSetBandKey(value, sourceId) {
     el.value = value;
     el.dispatchEvent(new Event('change'));
   });
+  if (menuState.toLinked) menuMatchTo();
+  menuPaintToNote();
   menuSaveSetup();
+}
+
+/* Song Transposer "To" key: follows the Band key by default; a hand
+   change (dropdown or -1/+1) makes it the song's own key until the
+   player taps "Match band key". */
+function menuMatchTo() {
+  const bar = document.getElementById('barBandKey');
+  const to = document.getElementById('toKey');
+  if (!bar || !to || to.value === bar.value) return;
+  menuState.settingTo = true;
+  to.value = bar.value;
+  to.dispatchEvent(new Event('change'));
+  menuState.settingTo = false;
+}
+
+function menuUnlinkTo() {
+  if (menuState.settingTo || !menuState.toLinked) return;
+  menuState.toLinked = false;
+  menuPaintToNote();
+  menuSaveSetup();
+}
+
+function menuPaintToNote() {
+  const note = document.getElementById('toLinkNote');
+  const bar = document.getElementById('barBandKey');
+  if (!note || !bar) return;
+  const band = bar.options[bar.selectedIndex] ? bar.options[bar.selectedIndex].text : bar.value;
+  note.innerHTML = menuState.toLinked
+    ? 'To follows the band key (' + band + ').'
+    : 'To is your own key for this song. <button type="button" class="link-btn" id="toMatchBtn">Match band key (' + band + ')</button>';
 }
 
 function menuSetCapo(value) {
@@ -212,7 +246,7 @@ function menuSetCapo(value) {
 function menuSaveSetup() {
   const bar = document.getElementById('barBandKey');
   const cap = document.getElementById('barCapo');
-  menuStore(MENU_SETUP_KEY, { bandKey: bar ? bar.value : null, capo: cap ? cap.value : '0' });
+  menuStore(MENU_SETUP_KEY, { bandKey: bar ? bar.value : null, capo: cap ? cap.value : '0', toLinked: menuState.toLinked });
 }
 
 function menuUpdateBar() {
@@ -228,6 +262,20 @@ function menuInitSetup() {
       '<option value="' + i + '">' + (i === 0 ? 'No capo' : 'Capo ' + i) + '</option>').join('');
   }
   const saved = menuLoad(MENU_SETUP_KEY);
+  if (saved && saved.toLinked === false) menuState.toLinked = false;
+  const toSel = document.getElementById('toKey');
+  if (toSel) toSel.addEventListener('change', menuUnlinkTo);
+  ['stepDownBtn', 'stepUpBtn'].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.addEventListener('click', menuUnlinkTo);
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#toMatchBtn')) return;
+    menuState.toLinked = true;
+    menuMatchTo();
+    menuPaintToNote();
+    menuSaveSetup();
+  });
   const ll = document.getElementById('llBandKey');
   const llCapo = document.getElementById('llCapo');
   if (bar) {
