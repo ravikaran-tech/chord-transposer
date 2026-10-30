@@ -11,7 +11,7 @@
 
   <!-- Safety net: works even if an old style.css is ever served -->
   <style>.screen-hidden, [hidden] { display: none !important; }</style>
-  <link rel="stylesheet" href="style.css?v=12">
+  <link rel="stylesheet" href="style.css?v=13">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#171A21">
 
@@ -19,7 +19,15 @@
     // Set theme before paint to avoid a flash of the wrong theme.
     (function () {
       var saved = null;
-      try { saved = localStorage.getItem('theme'); } catch (e) {}
+      try {
+        // One-time reset (Oct 2026): everyone starts in dark once; after
+        // that, a Light/Dark choice made in Settings is remembered again.
+        if (localStorage.getItem('themeReset') !== '2026-10') {
+          localStorage.removeItem('theme');
+          localStorage.setItem('themeReset', '2026-10');
+        }
+        saved = localStorage.getItem('theme');
+      } catch (e) {}
       var theme = (saved === 'light' || saved === 'dark') ? saved : 'dark'; // dark on first visit; the user's own choice is remembered
       document.documentElement.setAttribute('data-theme', theme);
     })();
@@ -367,14 +375,14 @@ Paste the song, chords on their own line above the lyrics..."></textarea>
       paint();
     })();
   </script>
-  <script src="guitar-chords.js?v=12"></script>
-  <script src="app.js?v=12"></script>
-  <script src="guitar.js?v=12"></script>
-  <script src="live-lookup.js?v=12"></script>
-  <script src="ui-enhance.js?v=12"></script>
-  <script src="upload.js?v=12"></script>
-  <script src="menu.js?v=12"></script>
-  <script src="song-clear.js?v=12"></script>
+  <script src="guitar-chords.js?v=13"></script>
+  <script src="app.js?v=13"></script>
+  <script src="guitar.js?v=13"></script>
+  <script src="live-lookup.js?v=13"></script>
+  <script src="ui-enhance.js?v=13"></script>
+  <script src="upload.js?v=13"></script>
+  <script src="menu.js?v=13"></script>
+  <script src="song-clear.js?v=13"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
