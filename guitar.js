@@ -88,8 +88,57 @@ const gState = {
   shapes: new Set([2, 7, 0]), // default D, G, C
   targetValue: 'B',
   songKeyValue: 'auto', // key the pasted song is written in
-  playInPc: null
+  playInPc: null,       // Capo Finder's suggestion (a shape family)
+  myCapo: 0             // the capo the player actually uses (setup bar)
 };
+
+/* ------------------------------------------------------------
+   My capo: the one capo value for the whole app. Shapes with Capo
+   always uses it; the Capo Finder only suggests one.
+------------------------------------------------------------ */
+
+// Major-key tonic names for any shape key (Db not C#, F# not Gb).
+const SHAPE_KEY_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+function myShapePc() {
+  return ((targetPc() - gState.myCapo) % 12 + 12) % 12;
+}
+
+function shapeKeyLabel(shapePc, minor) {
+  const tonic = SHAPE_KEY_NAMES[shapePc];
+  return minor ? spellInKey((shapePc + 9) % 12, tonic) + 'm' : tonic;
+}
+
+function guitarSetMyCapo(n) {
+  const v = parseInt(n, 10);
+  gState.myCapo = v >= 0 && v <= 11 ? v : 0;
+  updateFinderUse();
+  renderGuitarSong();
+}
+
+// Finder's "Use capo N" button + the hint on Shapes with Capo.
+function updateFinderUse() {
+  const shapes = selectedShapesSorted();
+  const chosen = shapes.find(s => s.pc === gState.playInPc) || shapes[0];
+  if (!chosen) return;
+  const name = familyLabel(chosen, targetIsMinor());
+  const btn = document.getElementById('finderUseBtn');
+  const note = document.getElementById('finderUseNote');
+  const hint = document.getElementById('guitarSuggest');
+  const same = chosen.capo === gState.myCapo;
+  const capoTxt = chosen.capo === 0 ? 'no capo' : 'capo ' + chosen.capo;
+  if (btn) {
+    btn.dataset.useCapo = String(chosen.capo);
+    btn.textContent = same ? `\u2713 Using ${capoTxt}` : `Use ${capoTxt} (${name} shapes)`;
+    btn.disabled = same;
+  }
+  if (note) note.textContent = same ? 'This is your capo on every screen now.' : `Your capo now: ${gState.myCapo === 0 ? 'none' : gState.myCapo}.`;
+  if (hint) {
+    hint.innerHTML = same ? '' :
+      `Capo Finder suggests <strong>${capoTxt}</strong> (${name} shapes). ` +
+      `<button type="button" class="link-btn" data-use-capo="${chosen.capo}">Use it</button>`;
+  }
+}
 
 /* ------------------------------------------------------------
    Fingering lookup
@@ -285,6 +334,7 @@ function updateCapo() {
   ).join('   ');
   alt.textContent = `to sound in ${target}:   ${list}`;
 
+  updateFinderUse();
   renderGuitarSong();
 }
 
@@ -303,9 +353,10 @@ function renderGuitarSong() {
   // Name shown for the band's key: the song's spelling, or both names
   // (A#/Bb) when the song doesn't tell us.
   const targetName = songStyle ? target.name : keyDualLabel(gState.targetValue);
-  const family = SHAPE_FAMILIES.find(f => f.pc === gState.playInPc);
-  const shapeMeta = { name: familyLabel(family, target.minor) };
-  const capo = capoForShape(gState.playInPc);
+  const shapePc = myShapePc();
+  const shapeTonic = SHAPE_KEY_NAMES[shapePc];
+  const shapeMeta = { name: shapeKeyLabel(shapePc, target.minor) };
+  const capo = gState.myCapo;
 
   if (!input.trim()) {
     outEl.textContent = '';
@@ -340,8 +391,8 @@ function renderGuitarSong() {
   const toBand = ((targetPc() - songMajorPc) % 12 + 12) % 12;
 
   // Step 2: band's key -> the shapes you finger (down by the capo amount).
-  const toShapes = ((gState.playInPc - targetPc()) % 12 + 12) % 12;
-  const shapeText = transposeToShapeKey(input, (toBand + toShapes) % 12, family.name);
+  const toShapes = ((shapePc - targetPc()) % 12 + 12) % 12;
+  const shapeText = transposeToShapeKey(input, (toBand + toShapes) % 12, shapeTonic);
   outEl.textContent = shapeText;
 
   const moveShort = toBand > 6 ? toBand - 12 : toBand;

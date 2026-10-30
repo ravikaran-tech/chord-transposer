@@ -230,9 +230,12 @@ function llRender() {
   // shape + capo the other way). "Your key" is not used in this mode.
   const capoRow = document.getElementById('llCapoRow');
   const onGuitar = llGuitarTabActive();
-  if (capoRow) capoRow.hidden = !onGuitar;
+  if (capoRow) capoRow.hidden = true; // capo is set in the top setup bar
   const capo = onGuitar ? llState.capo : 0;
   const capoMode = capo > 0;
+  // With a capo you play in the band's key, so "Your key" isn't used: hide it.
+  const yourRow = yourSel.closest('.key-row');
+  if (yourRow) yourRow.hidden = capoMode;
 
   let outputPc, outputFlats, fromLabel, toLabel;
   if (capoMode) {

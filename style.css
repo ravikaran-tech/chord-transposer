@@ -935,3 +935,64 @@ textarea::placeholder { color: var(--ink-faint); }
 @media print {
   .setup-bar, .menu-btn, .menu-drawer, .menu-overlay { display: none !important; }
 }
+
+/* ---------- Bottom bar, safe areas, tap sizes (Oct 2026) ---------- */
+/* iPhone notch / home bar */
+.stage {
+  padding-left: max(18px, env(safe-area-inset-left));
+  padding-right: max(18px, env(safe-area-inset-right));
+  padding-top: max(24px, calc(env(safe-area-inset-top) + 12px));
+  /* room for the fixed bottom bar */
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+body::before {
+  content: ""; position: fixed; top: 0; left: 0; right: 0; z-index: 25;
+  height: env(safe-area-inset-top); background: var(--bg); pointer-events: none;
+}
+.setup-bar { top: env(safe-area-inset-top); }
+
+.bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  display: flex; justify-content: center;
+  padding: 6px max(8px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.18);
+}
+.bn-item {
+  flex: 1 1 0; max-width: 140px; min-height: 56px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  background: transparent; border: 0; border-radius: var(--radius-sm);
+  color: var(--ink-dim); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.bn-item.active { color: var(--primary); }
+.bn-item.active svg { stroke-width: 2.2; }
+.bn-item:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+
+.menu-drawer {
+  padding-top: calc(18px + env(safe-area-inset-top));
+  padding-bottom: calc(28px + env(safe-area-inset-bottom));
+  padding-left: max(14px, env(safe-area-inset-left));
+}
+.menu-item { display: flex; align-items: center; gap: 12px; }
+.menu-item svg { flex: 0 0 auto; color: var(--ink-dim); }
+.menu-item.active svg { color: var(--primary); }
+
+/* 44px minimum tap targets */
+.tab-btn, .btn.small, .btn, .chip, .link-btn, .ll-clear-names, .modal-close { min-height: 44px; }
+.modal-close { min-width: 44px; }
+
+/* 16px text stops iPhone zooming in when a box is tapped */
+textarea, input[type="text"], select { font-size: 16px; }
+
+.link-btn {
+  background: none; border: 0; padding: 0 4px; font: inherit; font-weight: 600;
+  color: var(--primary); text-decoration: underline; cursor: pointer;
+}
+#guitarSuggest:empty, #finderUseNote:empty { display: none; }
+.btn:disabled { opacity: 0.7; cursor: default; }
+
+@media print {
+  .bottom-nav, body::before { display: none !important; }
+  .stage { padding-bottom: 24px; }
+}

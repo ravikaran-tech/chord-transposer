@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Chord Transposer</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,9 +28,6 @@
   <div class="stage">
 
     <header class="topbar">
-      <button type="button" id="menuBtn" class="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="menuDrawer">
-        <span></span><span></span><span></span>
-      </button>
       <div class="brand">
         <span class="wordmark">Chord Transposer</span>
         <span class="wordmark-sub" id="screenTitle">for piano &amp; guitar</span>
@@ -62,7 +59,7 @@
     <section class="panel live-lookup" id="liveLookupCard" data-screen="live">
       <p class="kicker sage">Live chord lookup</p>
       <h2 class="panel-title">Mid-song translator</h2>
-      <p class="panel-note">Set both keys once. Then look up any single chord called out live &mdash; even an accidental not in the song's key.</p>
+      <p class="panel-note">Set the band key (and your capo, on Guitar) at the top once. Then look up any single chord called out live &mdash; even one not in the song's key.</p>
 
       <div class="key-row ll-names">
         <label class="knob">
@@ -79,7 +76,7 @@
       <button type="button" id="llClearNames" class="ll-clear-names" hidden>Clear names</button>
 
       <div class="key-row">
-        <label class="knob">
+        <label class="knob" hidden>
           <span class="knob-cap" id="llBandKeyLabel">Band key</span>
           <select id="llBandKey" data-keys="major-minor" data-default="D"></select>
         </label>
@@ -89,7 +86,7 @@
         </label>
       </div>
 
-      <div class="key-row" id="llCapoRow" hidden>
+      <div class="key-row" id="llCapoRow" hidden data-always-hidden>
         <label class="knob">
           <span class="knob-cap">My capo (fret)</span>
           <select id="llCapo"></select>
@@ -125,7 +122,7 @@
     <div id="tab-piano" class="tab-panel active">
 
       <section class="hero" data-screen="quick">
-        <p class="hero-lead">You play in one key. The band moved to another. Pick both — this gives you the transpose amount.</p>
+        <p class="hero-lead">Pick the key you play in. The band's key is set at the top. This gives you the transpose amount.</p>
 
         <div class="dial-frame">
           <div id="pianoDialBadge" class="dial-badge">
@@ -145,8 +142,7 @@
             <span class="knob-cap">My key</span>
             <select id="quickFromKey" data-keys="major-minor"></select>
           </label>
-          <span class="knob-arrow">&rarr;</span>
-          <label class="knob">
+          <label class="knob" hidden>
             <span class="knob-cap">Band's key</span>
             <select id="quickToKey" data-keys="major-minor"></select>
           </label>
@@ -213,7 +209,7 @@ Paste your song or chord list here..."></textarea>
     <div id="tab-guitar" class="tab-panel">
 
       <section class="hero" data-screen="finder">
-        <p class="hero-lead">Tell it the shapes you're comfortable playing, and where the band is. It finds the lowest capo that lets you use them.</p>
+        <p class="hero-lead">Pick the shapes you like. For the band's key at the top, this suggests a capo. Tap <strong>Use</strong> to make it your capo everywhere.</p>
 
         <div class="dial-frame">
           <div id="guitarDialBadge" class="dial-badge">
@@ -232,7 +228,14 @@ Paste your song or chord list here..."></textarea>
         <span class="knob-cap" style="display:block; margin: 6px 0 8px 2px;">Shapes I can play</span>
         <div id="shapeChips" class="chips"></div>
 
-        <label class="knob knob-wide">
+        <label class="knob knob-wide" style="margin-top:12px">
+          <span class="knob-cap">Suggestion &mdash; change only if you want</span>
+          <select id="guitarPlayIn"></select>
+        </label>
+        <button type="button" id="finderUseBtn" class="btn btn-primary full" data-use-capo="0" style="margin-top:12px">Use this capo</button>
+        <p id="finderUseNote" class="alt-line" aria-live="polite"></p>
+
+        <label class="knob knob-wide" hidden>
           <span class="knob-cap">Band's key</span>
           <select id="guitarTargetKey" data-keys="major-minor" data-default="B"></select>
         </label>
@@ -241,7 +244,8 @@ Paste your song or chord list here..."></textarea>
       <section class="panel" data-screen="shapes">
         <p class="kicker sage">Shapes with the capo</p>
         <h2 class="panel-title">Your chords, fingered</h2>
-        <p class="panel-note">Paste the song in whatever key it's written in. Set the song's key (or leave Auto-detect) and the app moves it to the band's key, then into the shapes you finger.</p>
+        <p class="panel-note">Paste the song in whatever key it's written in. The app moves it to the band's key, then into the shapes you finger with <strong>My capo</strong> (set at the top).</p>
+        <p id="guitarSuggest" class="alt-line"></p>
 
         <div class="key-row">
           <label class="knob knob-wide">
@@ -259,13 +263,6 @@ Paste your song or chord list here..."></textarea>
 
         <textarea id="guitarInput" spellcheck="false" wrap="off" placeholder="G#  C#  D#  Fm
 Paste the song, chords on their own line above the lyrics..."></textarea>
-
-        <div class="key-row">
-          <label class="knob knob-wide">
-            <span class="knob-cap">Play in &mdash; auto-picked, change only if you want</span>
-            <select id="guitarPlayIn"></select>
-          </label>
-        </div>
 
         <button id="guitarTransposeBtn" class="btn btn-primary full">Show shapes</button>
 
@@ -293,13 +290,14 @@ Paste the song, chords on their own line above the lyrics..."></textarea>
 
   <!-- ============ MENU DRAWER ============ -->
   <div id="menuOverlay" class="menu-overlay" hidden></div>
-  <nav id="menuDrawer" class="menu-drawer" aria-label="Main menu" hidden>
+  <nav id="bottomNav" class="bottom-nav" aria-label="Main"></nav>
+  <div id="menuDrawer" class="menu-drawer" role="dialog" aria-modal="true" aria-label="All screens" hidden>
     <div class="menu-head">
       <span class="wordmark">Menu</span>
       <button type="button" id="menuCloseBtn" class="modal-close" aria-label="Close menu">&times;</button>
     </div>
-    <div id="menuList"></div>
-  </nav>
+    <nav id="menuList" aria-label="All screens"></nav>
+  </div>
 
   <!-- ============ SHARED MODAL ============ -->
   <div id="chordModal" class="modal-overlay">

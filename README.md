@@ -291,3 +291,17 @@ does the rest of the transposing for you.
 
 Works as a static site — host it for free on GitHub Pages, Netlify, or
 similar. No server or backend required.
+
+## Navigation (Oct 2026)
+
+- **Bottom bar** with the 3 main screens for the instrument you picked, plus **More**:
+  - Piano: Live, Key (Quick Key Transpose), Song (Song Transposer), More
+  - Guitar: Live, Capo (Capo Finder), Shapes (Shapes with Capo), More
+- **More** opens a sheet listing every screen, including Chord Reference and Settings.
+- **Setup bar** at the top: **Band key** (used by every screen) and, on Guitar,
+  **My capo**. These are the only band-key and capo boxes, and both are saved.
+- **My capo is the one capo value.** Live Chord Lookup and Shapes with Capo use it.
+  The Capo Finder only *suggests* a capo; tap **Use capo N** to apply it.
+  A new suggestion never changes your capo by itself.
+- The phone **Back** button closes the More sheet, or goes to the previous screen.
+- Opens in **dark mode** the first time; Light/Dark is in Settings and remembered.
