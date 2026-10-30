@@ -125,6 +125,11 @@ song's key, so the full transposer's key detection shouldn't be involved.
   whichever open shapes you already selected in "Shapes I can play". For
   minor chords it prefers a shape with an open minor form (A, E or D →
   "open Am / Em / Dm shape").
+- **My capo (Guitar tab only)** — set the fret your capo is on. Then the card
+  ignores "Your key" and tells you the shape to finger: **band's chord − capo**.
+  With capo 2: band calls **G** → finger **F**; **C#** → **B**; **A#** → **G#**.
+  Flip the direction and it adds the capo instead (your F shape + capo 2 =
+  G for the band). Capo is saved; "No capo" gives the normal key-to-key answer.
 - Independent of the full song transposer and its key-detection logic —
   a live accidental is never mistaken for the song's tonic.
 

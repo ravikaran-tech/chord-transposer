@@ -866,3 +866,5 @@ textarea::placeholder { color: var(--ink-faint); }
   color: var(--sage);
   font-weight: 600;
 }
+
+#llCapoRow[hidden] { display: none; }

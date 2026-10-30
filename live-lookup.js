@@ -67,6 +67,7 @@ const llState = {
   direction: 'band-to-you', // 'band-to-you' | 'you-to-band'
   root: 'F#',
   quality: '',
+  capo: 0,      // my capo fret (0-11); only used on the Guitar tab
   bandName: '', // typed name of the band player; '' = use default wording
   yourName: ''  // typed name of the guitar player (you)
 };
@@ -138,6 +139,9 @@ function llLoadSavedState() {
     if (typeof saved.quality === 'string' && CHORD_FORMULAS.hasOwnProperty(saved.quality)) {
       llState.quality = saved.quality;
     }
+    if (Number.isInteger(saved.capo) && saved.capo >= 0 && saved.capo <= 11) {
+      llState.capo = saved.capo;
+    }
     llState.bandName = llCleanName(saved.bandName);
     llState.yourName = llCleanName(saved.yourName);
     return saved;
@@ -154,6 +158,7 @@ function llSaveState(bandKeyValue, yourKeyValue) {
       direction: llState.direction,
       root: llState.root,
       quality: llState.quality,
+      capo: llState.capo,
       bandName: llState.bandName,
       yourName: llState.yourName
     }));
@@ -220,8 +225,22 @@ function llRender() {
   llApplyNames();
   if (rootLabel) rootLabel.textContent = bandToYou ? words.rootLabelBand : words.rootLabelYou;
 
+  // Capo mode (Guitar tab, capo > 0): you play in the band's key with a
+  // capo, so shape you finger = band's chord - capo (and band's chord =
+  // shape + capo the other way). "Your key" is not used in this mode.
+  const capoRow = document.getElementById('llCapoRow');
+  const onGuitar = llGuitarTabActive();
+  if (capoRow) capoRow.hidden = !onGuitar;
+  const capo = onGuitar ? llState.capo : 0;
+  const capoMode = capo > 0;
+
   let outputPc, outputFlats, fromLabel, toLabel;
-  if (bandToYou) {
+  if (capoMode) {
+    outputPc = bandToYou ? inputPc - capo : inputPc + capo;
+    outputFlats = bandMeta.flats;
+    fromLabel = bandToYou ? 'band' + words.bandTag : `your shape (capo ${capo})` + words.youTag;
+    toLabel = bandToYou ? `your shape (capo ${capo})` + words.youTag : 'band' + words.bandTag;
+  } else if (bandToYou) {
     outputPc = inputPc + (yourMeta.pc - bandMeta.pc);
     outputFlats = yourMeta.flats;
     fromLabel = bandMeta.name + words.bandTag;
@@ -233,15 +252,20 @@ function llRender() {
     toLabel = bandMeta.name + words.bandTag;
   }
 
+  outputPc = ((outputPc % 12) + 12) % 12;
   const outputRoot = spell(outputPc, outputFlats);
   const outputChord = outputRoot + quality;
 
   badge.textContent = outputChord;
   sub.textContent = `${llState.root}${quality} in ${fromLabel} \u2192 ${outputChord} in ${toLabel}`;
 
-  if (llGuitarTabActive()) {
+  if (onGuitar) {
     guitarNote.style.display = '';
-    if (bandToYou) {
+    if (capoMode) {
+      guitarNote.textContent = bandToYou
+        ? `${words.playPrefix}: finger ${outputChord} with capo ${capo}.`
+        : `${words.tellBand}: ${outputChord} (your ${llState.root}${quality} shape + capo ${capo}).`;
+    } else if (bandToYou) {
       const isMinor = !!(formula && formula.minor);
       const shape = llBestShapeForPc(outputPc, isMinor);
       if (shape) {
@@ -302,6 +326,13 @@ function initLiveLookup() {
   }
   rootSel.value = llState.root;
   qualSel.value = llState.quality;
+  const capoSel = document.getElementById('llCapo');
+  if (capoSel) {
+    capoSel.innerHTML = Array.from({ length: 12 }, (_, i) =>
+      `<option value="${i}">${i === 0 ? 'No capo' : 'Capo ' + i}</option>`).join('');
+    capoSel.value = String(llState.capo);
+    capoSel.addEventListener('change', () => { llState.capo = parseInt(capoSel.value, 10) || 0; llRender(); });
+  }
   if (bandToYouBtn) bandToYouBtn.classList.toggle('active', llState.direction === 'band-to-you');
   if (youToBandBtn) youToBandBtn.classList.toggle('active', llState.direction === 'you-to-band');
 
