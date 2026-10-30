@@ -95,6 +95,7 @@ function layoutLines(lines, opts) {
   const out = [];
   sorted.forEach((l, i) => {
     if (i > 0 && pitch && sorted[i].y - sorted[i - 1].y > pitch * 1.6) out.push('');
+    if (l.unreadable) { out.push(''); return; }   // e.g. handwriting: leave room to type
     const words = l.words.slice().sort((a, b) => a.x0 - b.x0);
     if (opts.repair !== false && repairChordLine(words) > 0) {
       words.forEach(w => { if (w.fixedFrom) repaired.push({ from: w.fixedFrom, to: w.text }); });
@@ -115,7 +116,7 @@ function layoutLines(lines, opts) {
     });
     out.push(line.replace(/\s+$/, ''));
   });
-  return { text: out.join('\n'), repaired };
+  return { text: out.join('\n'), repaired, unreadable: sorted.filter(l => l.unreadable).length };
 }
 
 // Very small RTF-to-text converter (enough for chord sheets).
@@ -228,18 +229,53 @@ async function ocrCanvas(canvas, onProgress) {
   const { data } = await worker.recognize(canvas, {}, { blocks: true });
   const lines = [];
   (data.blocks || []).forEach(b => b.paragraphs.forEach(p => p.lines.forEach(l => {
-    lines.push({
-      y: l.bbox.y0,
-      words: l.words.map(w => ({ text: w.text, x0: w.bbox.x0, x1: w.bbox.x1 }))
-    });
+    const words = l.words.map(w => ({ text: w.text, x0: w.bbox.x0, x1: w.bbox.x1, conf: w.confidence }));
+    lines.push({ y: l.bbox.y0, words, unreadable: isUnreadableLine(words) });
   })));
   return layoutLines(lines);
+}
+
+// A line the reader couldn't make sense of (usually handwriting): low
+// confidence, not a clean chord line, and fewer than 2 real-looking words.
+// Measured on a scanned sheet with pen chords: handwriting lines scored
+// 19-48, printed lyric lines 57-92 or had several long words.
+const OCR_UNREADABLE_CONF = 50;
+function isUnreadableLine(words) {
+  if (!words.length) return false;
+  const conf = words.reduce((s, w) => s + (w.conf || 0), 0) / words.length;
+  if (conf >= OCR_UNREADABLE_CONF) return false;
+  if (words.every(w => isChordWord(w.text))) return false;
+  const longWords = words.filter(w => /^[A-Za-z'’-]{5,}[.,;:!?]*$/.test(w.text)).length;
+  return longWords < 2;
+}
+
+// Share of words in a PDF's hidden text that look like real words or
+// chords. A copier's built-in text layer on a scan is often garbage
+// ("$srsaeatham", "v\"*ffi*m"): measured 0.55 vs 1.0 for a real text PDF.
+const PDF_TEXT_OK = 0.8;
+const PDF_OCR_SCALE = 4.2; // 72 dpi x 4.2 = ~300 dpi
+function textLayerQuality(text) {
+  const toks = text.match(/\S+/g) || [];
+  if (!toks.length) return 0;
+  const good = toks.filter(t =>
+    /^[("'“]?[A-Za-z][A-Za-z'’-]*[.,;:!?)"”]*$/.test(t) || /^[–—-]$/.test(t) ||
+    /^\d+[.)]?$/.test(t) || isChordWord(t)).length;
+  return good / toks.length;
+}
+
+// Does the page paint a picture (i.e. it's a scan or photo)?
+async function pageHasImage(page, pdfjs) {
+  try {
+    const ops = await page.getOperatorList();
+    const img = [pdfjs.OPS.paintImageXObject, pdfjs.OPS.paintJpegXObject, pdfjs.OPS.paintInlineImageXObject];
+    return ops.fnArray.some(fn => img.indexOf(fn) !== -1);
+  } catch (e) { return false; }
 }
 
 async function readImage(file, onProgress) {
   const canvas = await loadImageToCanvas(file);
   const r = await ocrCanvas(canvas, onProgress);
-  return { text: r.text, repaired: r.repaired, source: 'photo' };
+  return { text: r.text, repaired: r.repaired, unreadable: r.unreadable || 0, source: 'photo' };
 }
 
 async function readPdf(file, onProgress) {
@@ -249,6 +285,8 @@ async function readPdf(file, onProgress) {
   const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
   const pages = [];
   let textChars = 0;
+  let allText = '';
+  let anyImage = false;
   for (let p = 1; p <= pdf.numPages; p++) {
     const page = await pdf.getPage(p);
     const tc = await page.getTextContent();
@@ -256,6 +294,7 @@ async function readPdf(file, onProgress) {
     tc.items.forEach(it => {
       if (!it.str || !it.str.trim()) return;
       textChars += it.str.trim().length;
+      allText += it.str + ' ';
       const y = Math.round(-it.transform[5] / 2) * 2;      // top-down, 2pt buckets
       const x0 = it.transform[4];
       if (!byY.has(y)) byY.set(y, []);
@@ -266,27 +305,33 @@ async function readPdf(file, onProgress) {
         return w;
       });
     });
+    if (await pageHasImage(page, pdfjs)) anyImage = true;
     pages.push({ page, lines: [...byY.entries()].map(([y, words]) => ({ y, words })) });
   }
 
-  // Text PDF: lay out each page's words. Scanned PDF: read the page images.
-  if (textChars > 20) {
+  // Text PDF: lay out each page's words. Scanned PDF (no text, or a scan
+  // whose hidden text is garbage): read the page images instead.
+  const goodText = textChars > 20 && !(anyImage && textLayerQuality(allText) < PDF_TEXT_OK);
+  if (goodText) {
     const parts = pages.map(pg => layoutLines(pg.lines, { repair: false }).text);
     return { text: parts.join('\n\n'), repaired: [], source: 'PDF' };
   }
   const texts = [];
   let repaired = [];
+  let unreadable = 0;
   for (let i = 0; i < pages.length; i++) {
     if (onProgress) onProgress({ status: `reading page ${i + 1} of ${pages.length}`, progress: 0 });
-    const viewport = pages[i].page.getViewport({ scale: 2 });
+    // ~300 dpi: small print on scans reads far better than at 144 dpi.
+    const viewport = pages[i].page.getViewport({ scale: PDF_OCR_SCALE });
     const c = document.createElement('canvas');
     c.width = viewport.width; c.height = viewport.height;
     await pages[i].page.render({ canvasContext: c.getContext('2d'), viewport }).promise;
     const r = await ocrCanvas(c, onProgress);
     texts.push(r.text);
     repaired = repaired.concat(r.repaired);
+    unreadable += r.unreadable || 0;
   }
-  return { text: texts.join('\n\n'), repaired, source: 'scanned PDF' };
+  return { text: texts.join('\n\n'), repaired, unreadable, source: 'scanned PDF' };
 }
 
 async function readDocx(file) {
@@ -369,10 +414,21 @@ function initUploadFor(cfg) {
         const eg = r.repaired.slice(0, 3).map(x => `${escapeHtmlUpload(x.from)} → ${escapeHtmlUpload(x.to)}`).join(', ');
         msg += `<strong>Fixed ${r.repaired.length} chord${r.repaired.length > 1 ? 's' : ''}</strong> that looked misread (${eg}). `;
       }
-      msg += (r.source === 'photo' || r.source === 'scanned PDF')
-        ? 'Please check the chords and words below, then transpose.'
-        : 'Check it below, then transpose.';
-      setStatus(msg, 'ok');
+      const fromPicture = r.source === 'photo' || r.source === 'scanned PDF';
+      const chordLines = typeof isChordOnlyLine === 'function'
+        ? r.text.split('\n').filter(l => l.trim() && isChordOnlyLine(l)).length : 1;
+      if (fromPicture && (r.unreadable > 0 || chordLines === 0)) {
+        msg += `<strong>Some lines couldn\u2019t be read</strong>` +
+          (r.unreadable ? ` (${r.unreadable} left blank)` : '') +
+          ` \u2014 often handwritten chords, which the free reader can\u2019t read. ` +
+          `Type the chords on the blank lines above the words, then transpose.`;
+        setStatus(msg, 'warn');
+      } else {
+        msg += fromPicture
+          ? 'Please check the chords and words below, then transpose.'
+          : 'Check it below, then transpose.';
+        setStatus(msg, 'ok');
+      }
       if (typeof cfg.after === 'function') cfg.after();
     } catch (err) {
       setStatus(escapeHtmlUpload(err && err.message ? err.message : 'Couldn’t read this file.'), 'error');

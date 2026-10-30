@@ -1004,3 +1004,4 @@ textarea, input[type="text"], select { font-size: 16px; }
 .upload-row .upload-hint { flex-basis: 100%; order: 3; }
 .clear-note { margin: 6px 2px 10px; font-size: 14px; color: var(--ink-dim); }
 @media print { .clear-note { display: none !important; } }
+.upload-status.warn { border-color: #c9a227; background: var(--primary-soft); }
