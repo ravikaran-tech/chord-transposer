@@ -28,15 +28,26 @@
   <div class="stage">
 
     <header class="topbar">
-      <div>
+      <button type="button" id="menuBtn" class="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="menuDrawer">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="brand">
         <span class="wordmark">Chord Transposer</span>
-        <span class="wordmark-sub">for piano &amp; guitar</span>
-      </div>
-      <div class="theme-switch" id="themeSwitch">
-        <button type="button" data-theme-choice="light">Light</button>
-        <button type="button" data-theme-choice="dark">Dark</button>
+        <span class="wordmark-sub" id="screenTitle">for piano &amp; guitar</span>
       </div>
     </header>
+
+    <!-- Shared setup bar: one band key + capo for the whole app -->
+    <div class="setup-bar" id="setupBar">
+      <label class="setup-item">
+        <span class="knob-cap">Band key</span>
+        <select id="barBandKey" data-keys="major-minor" data-default="D"></select>
+      </label>
+      <label class="setup-item" id="barCapoItem" hidden>
+        <span class="knob-cap">My capo</span>
+        <select id="barCapo"></select>
+      </label>
+    </div>
 
     <nav class="tabs" role="tablist">
       <button class="tab-btn active" data-target="tab-piano" role="tab">Piano</button>
@@ -48,7 +59,7 @@
          Mid-song: someone calls one chord in one key, this
          resolves what to play/say in the other key.
     ========================================================= -->
-    <section class="panel live-lookup" id="liveLookupCard">
+    <section class="panel live-lookup" id="liveLookupCard" data-screen="live">
       <p class="kicker sage">Live chord lookup</p>
       <h2 class="panel-title">Mid-song translator</h2>
       <p class="panel-note">Set both keys once. Then look up any single chord called out live &mdash; even an accidental not in the song's key.</p>
@@ -113,7 +124,7 @@
     ========================================================= -->
     <div id="tab-piano" class="tab-panel active">
 
-      <section class="hero">
+      <section class="hero" data-screen="quick">
         <p class="hero-lead">You play in one key. The band moved to another. Pick both — this gives you the transpose amount.</p>
 
         <div class="dial-frame">
@@ -143,7 +154,7 @@
         <button id="quickTransposeBtn" class="btn btn-ghost">Update</button>
       </section>
 
-      <section class="panel">
+      <section class="panel" data-screen="song">
         <p class="kicker">Song &amp; chord transposer</p>
         <h2 class="panel-title">Transpose a song</h2>
         <p class="panel-note">Paste a whole song with lyrics, or just a chord list like <code>C, F, G</code>. Or upload a photo or file of the song.</p>
@@ -185,7 +196,7 @@ Paste your song or chord list here..."></textarea>
         </div>
       </section>
 
-      <section class="panel">
+      <section class="panel" data-screen="ref">
         <p class="kicker">Chord reference</p>
         <h2 class="panel-title">On the keyboard</h2>
         <p class="panel-note">Every chord in the result. Tap one to enlarge and hear it.</p>
@@ -201,7 +212,7 @@ Paste your song or chord list here..."></textarea>
     ========================================================= -->
     <div id="tab-guitar" class="tab-panel">
 
-      <section class="hero">
+      <section class="hero" data-screen="finder">
         <p class="hero-lead">Tell it the shapes you're comfortable playing, and where the band is. It finds the lowest capo that lets you use them.</p>
 
         <div class="dial-frame">
@@ -227,7 +238,7 @@ Paste your song or chord list here..."></textarea>
         </label>
       </section>
 
-      <section class="panel">
+      <section class="panel" data-screen="shapes">
         <p class="kicker sage">Shapes with the capo</p>
         <h2 class="panel-title">Your chords, fingered</h2>
         <p class="panel-note">Paste the song in whatever key it's written in. Set the song's key (or leave Auto-detect) and the app moves it to the band's key, then into the shapes you finger.</p>
@@ -265,8 +276,30 @@ Paste the song, chords on their own line above the lyrics..."></textarea>
 
     </div>
 
+    <section class="panel screen-hidden" id="settingsCard" data-screen="settings">
+      <p class="kicker">Settings</p>
+      <h2 class="panel-title">Appearance &amp; data</h2>
+      <span class="knob-cap">Theme</span>
+      <div class="theme-switch" id="themeSwitch">
+        <button type="button" data-theme-choice="light">Light</button>
+        <button type="button" data-theme-choice="dark">Dark</button>
+      </div>
+      <p class="panel-note" style="margin-top:14px">Names, keys, capo and your last screen are saved on this device.</p>
+      <button type="button" id="resetSavedBtn" class="btn btn-ghost small">Clear saved data</button>
+    </section>
+
     <footer class="footer">Works offline once installed</footer>
   </div>
+
+  <!-- ============ MENU DRAWER ============ -->
+  <div id="menuOverlay" class="menu-overlay" hidden></div>
+  <nav id="menuDrawer" class="menu-drawer" aria-label="Main menu" hidden>
+    <div class="menu-head">
+      <span class="wordmark">Menu</span>
+      <button type="button" id="menuCloseBtn" class="modal-close" aria-label="Close menu">&times;</button>
+    </div>
+    <div id="menuList"></div>
+  </nav>
 
   <!-- ============ SHARED MODAL ============ -->
   <div id="chordModal" class="modal-overlay">
@@ -334,6 +367,7 @@ Paste the song, chords on their own line above the lyrics..."></textarea>
   <script src="live-lookup.js"></script>
   <script src="ui-enhance.js"></script>
   <script src="upload.js"></script>
+  <script src="menu.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
