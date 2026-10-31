@@ -313,5 +313,12 @@ similar. No server or backend required.
   little, then wrap with their chords. On a phone it opens the Share sheet; the file is
   named "<title> - <new key>.pdf". Joined chords like `B-Em` and a title ending in its
   key ("Song - Em") are transposed too.
+- **Both names for flat/sharp keys, everywhere:** key names show the flat name with the sharp
+  one in brackets, e.g. `Bb (A#)`, `Ebm (D#m)` (dropdowns, setup bar, results, capo lines,
+  Live Lookup, PDF title and file name). Brackets, not a slash, because `Ebm/D#` is a chord
+  with a D# bass note.
+- **Chords switch (Auto / Sharps / Flats)** on Song, Shapes and Live Lookup: Auto follows the
+  key like before; Sharps or Flats forces one spelling for every chord, the diagrams and the
+  exported PDF. The choice is saved.
 - The phone **Back** button closes the More sheet, or goes to the previous screen.
 - Opens in **dark mode** the first time; Light/Dark is in Settings and remembered.

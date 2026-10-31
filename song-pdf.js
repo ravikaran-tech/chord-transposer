@@ -196,7 +196,7 @@ async function buildSongPdf(text) {
 function songPdfFileName(text, keyName) {
   const first = (text.split('\n').find(l => l.trim()) || 'Song').trim();
   const m = first.match(TITLE_KEY_REGEX);              // "Song - Bbm": use the title's own key
-  const key = m ? m[3] + m[4] + m[5] : keyName;
+  const key = keyBoth(m ? m[3] + m[4] + m[5] : keyName);   // "Bbm (A#m)"
   const title = (m ? m[1] : first).replace(/[\\/:*?"<>|]+/g, '').slice(0, 60).trim() || 'Song';
   return `${title} - ${key}.pdf`.replace(/\s+/g, ' ');
 }
@@ -248,7 +248,7 @@ function initSongPdf() {
     button: 'exportBtn',
     // The key as the result spells it (Bb or A#, following the song).
     keyName: () => keyForSong(keyMeta(document.getElementById('toKey').value),
-      songAccidentalStyle(document.getElementById('inputText').value)).name,
+      songAccidentalStyle(document.getElementById('inputText').value)).name,   // keyBoth() adds the other name
     onMessage: (msg, kind) => {
       if (!note) return;
       note.textContent = msg;

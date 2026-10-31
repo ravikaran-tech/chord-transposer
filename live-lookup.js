@@ -115,7 +115,7 @@ function llApplyNames() {
 function llPopulateRoot() {
   const sel = document.getElementById('llRoot');
   if (!sel) return;
-  sel.innerHTML = LL_ROOTS.map(r => `<option value="${r}">${r}</option>`).join('');
+  sel.innerHTML = LL_ROOTS.map(r => `<option value="${r}">${keyBoth(r)}</option>`).join('');
 }
 
 function llPopulateQuality() {
@@ -246,17 +246,17 @@ function llRender() {
   } else if (bandToYou) {
     outputPc = inputPc + (yourMeta.pc - bandMeta.pc);
     outputFlats = yourMeta.flats;
-    fromLabel = bandMeta.name + words.bandTag;
-    toLabel = yourMeta.name + words.youTag;
+    fromLabel = keyBoth(bandMeta.name) + words.bandTag;
+    toLabel = keyBoth(yourMeta.name) + words.youTag;
   } else {
     outputPc = inputPc + (bandMeta.pc - yourMeta.pc);
     outputFlats = bandMeta.flats;
-    fromLabel = yourMeta.name + words.youTag;
-    toLabel = bandMeta.name + words.bandTag;
+    fromLabel = keyBoth(yourMeta.name) + words.youTag;
+    toLabel = keyBoth(bandMeta.name) + words.bandTag;
   }
 
   outputPc = ((outputPc % 12) + 12) % 12;
-  const outputRoot = spell(outputPc, outputFlats);
+  const outputRoot = spell(outputPc, chordFlats(outputFlats));
   const outputChord = outputRoot + quality;
 
   badge.textContent = outputChord;

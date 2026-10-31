@@ -78,8 +78,10 @@ function spellInKey(pc, tonicName) {
 // Like transposeText (app.js), but spells results in the shape key.
 function transposeToShapeKey(input, shift, tonicName) {
   return mapChordLines(input, (match, root, quality, bass) => {
-    const newRoot = spellInKey(pcOf(root) + shift, tonicName);
-    const newBass = bass ? '/' + spellInKey(pcOf(bass) + shift, tonicName) : '';
+    // Auto: spell by scale degree in the shape key; Sharps/Flats: the switch wins.
+    const sp = pc => CHORD_SPELLING === 'auto' ? spellInKey(pc, tonicName) : spell(pc, CHORD_SPELLING === 'flats');
+    const newRoot = sp(pcOf(root) + shift);
+    const newBass = bass ? '/' + sp(pcOf(bass) + shift) : '';
     return newRoot + quality + newBass;
   });
 }
@@ -106,7 +108,7 @@ function myShapePc() {
 
 function shapeKeyLabel(shapePc, minor) {
   const tonic = SHAPE_KEY_NAMES[shapePc];
-  return minor ? spellInKey((shapePc + 9) % 12, tonic) + 'm' : tonic;
+  return keyBoth(minor ? spellInKey((shapePc + 9) % 12, tonic) + 'm' : tonic);
 }
 
 // Reset: suggestion back to the recommended (lowest) capo; caller sets My capo to 0.
@@ -373,7 +375,7 @@ function renderGuitarSong() {
   const target = keyForSong(keyMeta(gState.targetValue), songStyle);
   // Name shown for the band's key: the song's spelling, or both names
   // (A#/Bb) when the song doesn't tell us.
-  const targetName = songStyle ? target.name : keyDualLabel(gState.targetValue);
+  const targetName = keyBoth(songStyle ? target.name : keyDualLabel(gState.targetValue).replace(/ \(.*$/, ''));
   const shapePc = myShapePc();
   const shapeTonic = SHAPE_KEY_NAMES[shapePc];
   const shapeMeta = { name: shapeKeyLabel(shapePc, target.minor) };
@@ -395,7 +397,7 @@ function renderGuitarSong() {
     const detected = detectKey(input);
     if (detected) {
       songPc = detected.pc; songMinor = detected.minor;
-      songLabel = detectedKeyName(input, detected);   // spelled as the song writes it
+      songLabel = keyBoth(detectedKeyName(input, detected));   // spelled as the song writes it, both names shown
       songNote = ' (auto-detected)';
     } else {
       songPc = target.pc; songMinor = target.minor;
@@ -404,7 +406,7 @@ function renderGuitarSong() {
     }
   } else {
     const sm = keyForSong(keyMeta(gState.songKeyValue), songStyle);
-    songPc = sm.pc; songMinor = sm.minor; songLabel = sm.name;
+    songPc = sm.pc; songMinor = sm.minor; songLabel = keyBoth(sm.name);
   }
   // Compare keys through their relative majors, so a song detected as Fm
   // (relative minor of Ab/G#) still lines up with a band key of A#.

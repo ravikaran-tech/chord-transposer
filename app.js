@@ -115,12 +115,53 @@ function keyNameFromPc(pc, minor) {
 ------------------------------------------------------------ */
 const TWO_NAME_PCS = [1, 3, 6, 8, 10];
 
-// Key name for sentences: "A#/Bb", "A#m/Bbm"; other keys as they are.
+// Key names everywhere: a key with two names shows the flat name with the
+// sharp name in brackets: "Bb (A#)", "Ebm (D#m)". Brackets, not a slash,
+// because "Ebm/D#" would read as a chord over a D# bass. Others unchanged.
+function keyBoth(name) {
+  const m = String(name).match(/^([A-G][#b]?)(m?)$/);
+  if (!m) return name;
+  const pc = pcOf(m[1]);
+  if (!TWO_NAME_PCS.includes(pc)) return name;
+  return FLAT_NAMES[pc] + m[2] + ' (' + SHARP_NAMES[pc] + m[2] + ')';
+}
+
 function keyDualLabel(value) {
-  const meta = keyMeta(value);
-  if (!TWO_NAME_PCS.includes(meta.pc)) return meta.name;
-  const m = meta.minor ? 'm' : '';
-  return SHARP_NAMES[meta.pc] + m + '/' + FLAT_NAMES[meta.pc] + m;
+  return keyBoth(keyMeta(value).name);
+}
+
+/* ------------------------------------------------------------
+   Chord spelling switch: Auto (follow the key, as before), Sharps or
+   Flats. Applies to chords in song results, the PDF and Live Lookup.
+   Key names always show both (keyBoth).
+------------------------------------------------------------ */
+let CHORD_SPELLING = 'auto';
+try {
+  const savedSpelling = localStorage.getItem('chordSpelling');
+  if (savedSpelling === 'sharps' || savedSpelling === 'flats') CHORD_SPELLING = savedSpelling;
+} catch (e) { /* storage unavailable */ }
+
+// useFlats for chords, given what the key would choose.
+function chordFlats(keyFlats) {
+  return CHORD_SPELLING === 'sharps' ? false : CHORD_SPELLING === 'flats' ? true : keyFlats;
+}
+
+function paintSpellingSwitches() {
+  document.querySelectorAll('[data-spell]').forEach(b => {
+    const on = b.dataset.spell === CHORD_SPELLING;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+}
+
+function setChordSpelling(value) {
+  CHORD_SPELLING = value === 'sharps' || value === 'flats' ? value : 'auto';
+  try { localStorage.setItem('chordSpelling', CHORD_SPELLING); } catch (e) {}
+  paintSpellingSwitches();
+  // Re-draw everything that shows chords.
+  if (typeof runTranspose === 'function') runTranspose();
+  if (typeof renderGuitarSong === 'function') renderGuitarSong();
+  if (typeof llRender === 'function') llRender();
 }
 
 // 'sharp' | 'flat' | null — which accidental the song's chords use most.
@@ -360,14 +401,14 @@ function transposeText(input, shift, useFlats) {
 
 // A title line that ends with its key ("Song name - Em") gets the new key.
 // Only the first non-empty line, and only a plain key at the very end.
-const TITLE_KEY_REGEX = /^(.*\S)(\s+[-\u2013\u2014]\s+)([A-G])([#b]?)(m?)\s*$/;
+const TITLE_KEY_REGEX = /^(.*\S)(\s+[-\u2013\u2014]\s+)([A-G])([#b]?)(m?)(?:\s*\([A-G][#b]?m?\))?\s*$/;
 function transposeTitleKey(text, shift, useFlats) {
   const lines = text.split('\n');
   const i = lines.findIndex(l => l.trim());
   if (i === -1 || isChordOnlyLine(lines[i])) return text;
   const m = lines[i].match(TITLE_KEY_REGEX);
   if (!m) return text;
-  lines[i] = m[1] + m[2] + spell(pcOf(m[3] + m[4]) + shift, useFlats) + m[5];
+  lines[i] = m[1] + m[2] + keyBoth(spell(pcOf(m[3] + m[4]) + shift, useFlats) + m[5]);
   return lines.join('\n');
 }
 
@@ -444,7 +485,7 @@ function quickTranspose() {
   const otherSign = other > 0 ? '+' : (other < 0 ? '\u2212' : '');
   const semis = Math.abs(shortShift) === 1 ? 'semitone' : 'semitones';
   altEl.textContent =
-    `${from.name} \u2192 ${to.name} is ${Math.abs(shortShift)} ${semis} ` +
+    `${keyBoth(from.name)} \u2192 ${keyBoth(to.name)} is ${Math.abs(shortShift)} ${semis} ` +
     `${shortShift >= 0 ? 'up' : 'down'}  ·  or ${otherSign}${Math.abs(other)} the other way`;
 }
 
@@ -487,18 +528,18 @@ function runTranspose() {
   }
 
   const shift = (to.pc - fromPc + 12) % 12;
-  state.lastFlats = to.flats;
+  state.lastFlats = chordFlats(to.flats);
 
-  const result = transposeText(input, shift, to.flats);
+  const result = transposeText(input, shift, chordFlats(to.flats));
   outputEl.textContent = result;
 
   const shortShift = shift > 6 ? shift - 12 : shift;
   const sign = shortShift > 0 ? '+' : (shortShift < 0 ? '\u2212' : '');
   detectedInfoEl.innerHTML =
-    `<strong>${fromLabel}</strong>${autoNote} \u2192 <strong>${to.name}</strong>` +
+    `<strong>${keyBoth(fromLabel)}</strong>${autoNote} \u2192 <strong>${keyBoth(to.name)}</strong>` +
     `  ·  ${sign}${Math.abs(shortShift)} semitones`;
 
-  renderChordNotes(extractChords(result), to.flats);
+  renderChordNotes(extractChords(result), chordFlats(to.flats));
 }
 
 // Nudge the target key by a semitone and re-transpose.
@@ -729,6 +770,11 @@ function initEventListeners() {
   document.getElementById('stepUpBtn').addEventListener('click', () => stepSemitone(1));
   document.getElementById('copyBtn').addEventListener('click', copyOutput);
   // Export PDF: see song-pdf.js (a real song-sheet PDF, not a printout of the app).
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-spell]');
+    if (b) setChordSpelling(b.dataset.spell);
+  });
+  paintSpellingSwitches();
 
   document.getElementById('modalCloseBtn').addEventListener('click', closeChordModal);
   document.getElementById('chordModal').addEventListener('click', e => {

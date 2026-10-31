@@ -226,8 +226,8 @@ function menuPaintToNote() {
   if (!note || !bar) return;
   const band = bar.options[bar.selectedIndex] ? bar.options[bar.selectedIndex].text : bar.value;
   note.innerHTML = menuState.toLinked
-    ? 'To follows the band key (' + band + ').'
-    : 'To is your own key for this song. <button type="button" class="link-btn" id="toMatchBtn">Match band key (' + band + ')</button>';
+    ? 'To follows the band key: ' + band + '.'
+    : 'To is your own key for this song. <button type="button" class="link-btn" id="toMatchBtn">Match band key: ' + band + '</button>';
 }
 
 function menuSetCapo(value) {
