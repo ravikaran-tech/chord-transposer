@@ -308,5 +308,10 @@ similar. No server or backend required.
   re-links it. The choice is saved.
 - **Clear** (next to Upload song, on Piano Song and Guitar Shapes) empties the pasted
   song, the converted result and the chord diagrams. **Undo** brings it back for 8 seconds.
+- **Export PDF** (Piano Song) makes a real song-sheet PDF: white Letter page, Helvetica,
+  bold section labels, chords over the same words, no app screens. Long lines shrink a
+  little, then wrap with their chords. On a phone it opens the Share sheet; the file is
+  named "<title> - <new key>.pdf". Joined chords like `B-Em` and a title ending in its
+  key ("Song - Em") are transposed too.
 - The phone **Back** button closes the More sheet, or goes to the previous screen.
 - Opens in **dark mode** the first time; Light/Dark is in Settings and remembered.

@@ -303,7 +303,15 @@ function chordLineTokens(line) {
     // As written first (C(add9)), then without wrapping brackets ((C#) -> C#).
     let tok = raw;
     if (!ANCHORED_CHORD_REGEX.test(tok)) tok = raw.replace(/^\(+/, '').replace(/\)+$/, '');
-    if (!ANCHORED_CHORD_REGEX.test(tok)) return null;
+    if (!ANCHORED_CHORD_REGEX.test(tok)) {
+      // Joined chords like "B-Em" (a quick change): every part must be a chord.
+      const parts = tok.split(/[-\u2013]/);
+      if (parts.length > 1 && parts.every(p => ANCHORED_CHORD_REGEX.test(p))) {
+        parts.forEach(p => chords.push(p));
+        continue;
+      }
+      return null;
+    }
     chords.push(tok);
   }
   return chords.length ? chords : null;
@@ -342,11 +350,25 @@ function mapChordLines(input, renameChord) {
 }
 
 function transposeText(input, shift, useFlats) {
-  return mapChordLines(input, (match, root, quality, bass) => {
+  const rename = (match, root, quality, bass) => {
     const newRoot = spell(pcOf(root) + shift, useFlats);
     const newBass = bass ? '/' + spell(pcOf(bass) + shift, useFlats) : '';
     return newRoot + quality + newBass;
-  });
+  };
+  return transposeTitleKey(mapChordLines(input, rename), shift, useFlats);
+}
+
+// A title line that ends with its key ("Song name - Em") gets the new key.
+// Only the first non-empty line, and only a plain key at the very end.
+const TITLE_KEY_REGEX = /^(.*\S)(\s+[-\u2013\u2014]\s+)([A-G])([#b]?)(m?)\s*$/;
+function transposeTitleKey(text, shift, useFlats) {
+  const lines = text.split('\n');
+  const i = lines.findIndex(l => l.trim());
+  if (i === -1 || isChordOnlyLine(lines[i])) return text;
+  const m = lines[i].match(TITLE_KEY_REGEX);
+  if (!m) return text;
+  lines[i] = m[1] + m[2] + spell(pcOf(m[3] + m[4]) + shift, useFlats) + m[5];
+  return lines.join('\n');
 }
 
 function extractChords(text) {
@@ -706,7 +728,7 @@ function initEventListeners() {
   document.getElementById('stepDownBtn').addEventListener('click', () => stepSemitone(-1));
   document.getElementById('stepUpBtn').addEventListener('click', () => stepSemitone(1));
   document.getElementById('copyBtn').addEventListener('click', copyOutput);
-  document.getElementById('exportBtn').addEventListener('click', () => window.print());
+  // Export PDF: see song-pdf.js (a real song-sheet PDF, not a printout of the app).
 
   document.getElementById('modalCloseBtn').addEventListener('click', closeChordModal);
   document.getElementById('chordModal').addEventListener('click', e => {

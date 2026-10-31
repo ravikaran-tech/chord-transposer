@@ -11,7 +11,7 @@
 
   <!-- Safety net: works even if an old style.css is ever served -->
   <style>.screen-hidden, [hidden] { display: none !important; }</style>
-  <link rel="stylesheet" href="style.css?v=14">
+  <link rel="stylesheet" href="style.css?v=15">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#171A21">
 
@@ -203,6 +203,7 @@ Paste your song or chord list here..."></textarea>
           <button id="copyBtn" class="btn btn-ghost small">Copy</button>
           <button id="exportBtn" class="btn btn-ghost small">Export PDF</button>
         </div>
+        <p id="exportNote" class="alt-line export-note" hidden aria-live="polite"></p>
       </section>
 
       <section class="panel" data-screen="ref">
@@ -375,14 +376,15 @@ Paste the song, chords on their own line above the lyrics..."></textarea>
       paint();
     })();
   </script>
-  <script src="guitar-chords.js?v=14"></script>
-  <script src="app.js?v=14"></script>
-  <script src="guitar.js?v=14"></script>
-  <script src="live-lookup.js?v=14"></script>
-  <script src="ui-enhance.js?v=14"></script>
-  <script src="upload.js?v=14"></script>
-  <script src="menu.js?v=14"></script>
-  <script src="song-clear.js?v=14"></script>
+  <script src="guitar-chords.js?v=15"></script>
+  <script src="app.js?v=15"></script>
+  <script src="guitar.js?v=15"></script>
+  <script src="live-lookup.js?v=15"></script>
+  <script src="ui-enhance.js?v=15"></script>
+  <script src="upload.js?v=15"></script>
+  <script src="menu.js?v=15"></script>
+  <script src="song-clear.js?v=15"></script>
+  <script src="song-pdf.js?v=15"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {

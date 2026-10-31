@@ -1005,3 +1005,4 @@ textarea, input[type="text"], select { font-size: 16px; }
 .clear-note { margin: 6px 2px 10px; font-size: 14px; color: var(--ink-dim); }
 @media print { .clear-note { display: none !important; } }
 .upload-status.warn { border-color: #c9a227; background: var(--primary-soft); }
+.export-note.error { color: #e07a70; }
